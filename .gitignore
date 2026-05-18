@@ -1,0 +1,125 @@
+# ─────────────────────────────────────────────────────────────
+# Dependencies
+# ─────────────────────────────────────────────────────────────
+node_modules/
+jspm_packages/
+.pnp/
+.pnp.*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ─────────────────────────────────────────────────────────────
+# Build output
+# ─────────────────────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+out/
+.cache/
+
+# ─────────────────────────────────────────────────────────────
+# Vite / bundler caches
+# ─────────────────────────────────────────────────────────────
+.vite/
+.vite-cache/
+.rollup.cache/
+.parcel-cache/
+
+# Compiled outputs from vite.config.ts (only the .ts source is checked in)
+vite.config.js
+vite.config.d.ts
+
+# ─────────────────────────────────────────────────────────────
+# TypeScript incremental build artifacts
+# ─────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─────────────────────────────────────────────────────────────
+# Environment / secrets
+#   - never commit real credentials
+#   - .env.example IS committed so collaborators know which vars exist
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+*.local
+!.env.example
+
+# ─────────────────────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─────────────────────────────────────────────────────────────
+# Coverage / test output
+# ─────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+.vitest/
+.playwright/
+playwright-report/
+test-results/
+
+# ─────────────────────────────────────────────────────────────
+# Hosting / deploy
+# ─────────────────────────────────────────────────────────────
+.netlify/
+.vercel/
+
+# Firebase tooling output (kept out so the repo stays clean even if you
+# later run the Firebase CLI from this directory)
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+.firebaserc.local
+
+# ─────────────────────────────────────────────────────────────
+# Editors / IDEs
+# ─────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.iml
+*.code-workspace
+.history/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# ─────────────────────────────────────────────────────────────
+# OS junk
+# ─────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ─────────────────────────────────────────────────────────────
+# Misc
+# ─────────────────────────────────────────────────────────────
+*.pid
+*.seed
+*.pid.lock
+*.tgz
+.eslintcache
+.stylelintcache
+.tmp/
+tmp/
