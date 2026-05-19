@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// Paste these rules into Firebase Console -> Firestore Database -> Rules.
+//
+// Each authenticated user has access to two private documents:
+//   - /vaults/{uid}: encrypted vault
+//       { ciphertext: string, iv: string, salt: string, updatedAt: number, schemaVersion: 2 }
+//       The app encrypts data with AES-GCM-256 in the browser using a key derived
+//       from the user's MASTER password via PBKDF2. The master password never
+//       reaches Firebase, so even with full admin access we cannot decrypt.
+//   - /users/{uid}: profile (email, displayName, photoURL, createdAt, lastLoginAt)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /vaults/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly(['ciphertext', 'iv', 'salt', 'updatedAt', 'schemaVersion'])
+                            && request.resource.data.ciphertext is string
+                            && request.resource.data.iv is string
+                            && request.resource.data.salt is string
+                            && request.resource.data.updatedAt is number
+                            && request.resource.data.schemaVersion == 2;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    // Per-note encrypted documents
+    //   { ciphertext: string, iv: string, updatedAt: number, schemaVersion: 1 }
+    // Encrypted client-side with the same master-password-derived AES-GCM key.
+    match /notes/{userId}/items/{noteId} {
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow create, update: if request.auth != null
+                            && request.auth.uid == userId
+                            && request.resource.data.keys().hasOnly(['ciphertext', 'iv', 'updatedAt', 'schemaVersion'])
+                            && request.resource.data.ciphertext is string
+                            && request.resource.data.iv is string
+                            && request.resource.data.updatedAt is number
+                            && request.resource.data.schemaVersion == 1;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
