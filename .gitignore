@@ -27,12 +27,10 @@ out/
 .rollup.cache/
 .parcel-cache/
 
-# Compiled outputs from vite.config.ts (only the .ts source is checked in)
-vite.config.js
-vite.config.d.ts
-
 # ─────────────────────────────────────────────────────────────
 # TypeScript incremental build artifacts
+#   (kept under node_modules/.tmp/ by tsconfig outDir, but the
+#    pattern is left here as a safety net.)
 # ─────────────────────────────────────────────────────────────
 *.tsbuildinfo
 
