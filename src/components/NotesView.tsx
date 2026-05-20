@@ -31,15 +31,7 @@ interface Props {
 }
 
 const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
-  {
-    notes,
-    selectedId,
-    onSelect,
-    onCreate,
-    onUpdate,
-    onDelete,
-    onDirtyChange,
-  },
+  { notes, selectedId, onSelect, onCreate, onUpdate, onDelete, onDirtyChange },
   ref
 ) {
   const [query, setQuery] = useState("");

@@ -20,11 +20,7 @@ export default function TabButton({ active, onClick, icon, label, badge }: Props
       }`}
       aria-pressed={active}
     >
-      <span
-        className={`transition-colors ${
-          active ? "text-brand-500 dark:text-brand-300" : ""
-        }`}
-      >
+      <span className={`transition-colors ${active ? "text-brand-500 dark:text-brand-300" : ""}`}>
         {icon}
       </span>
       <span>{label}</span>
