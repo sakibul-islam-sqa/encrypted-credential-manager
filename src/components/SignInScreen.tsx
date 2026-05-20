@@ -99,7 +99,7 @@ export default function SignInScreen() {
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="card w-full max-w-md p-7 shadow-glow-lg">
         <div className="mb-6 flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-cyan-400 text-slate-950">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-cyan-400 text-white shadow-md shadow-brand-500/30">
             <IconShield size={22} />
           </div>
           <div className="min-w-0">

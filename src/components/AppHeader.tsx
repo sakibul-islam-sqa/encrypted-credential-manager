@@ -65,7 +65,14 @@ export default function AppHeader(props: Props) {
           </div>
         </div>
 
-        <Nav view={view} onChangeView={onChangeView} className="ml-3 hidden sm:flex" />
+        <Nav
+          view={view}
+          onChangeView={onChangeView}
+          credentialCount={credentialCount}
+          urlCount={urlCount}
+          notesCount={notesCount}
+          className="ml-3 hidden sm:flex"
+        />
 
         <div className="ml-auto flex items-center gap-2">
           <input
@@ -87,7 +94,13 @@ export default function AppHeader(props: Props) {
         </div>
       </div>
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 pb-2 sm:hidden sm:px-6">
-        <Nav view={view} onChangeView={onChangeView} />
+        <Nav
+          view={view}
+          onChangeView={onChangeView}
+          credentialCount={credentialCount}
+          urlCount={urlCount}
+          notesCount={notesCount}
+        />
       </div>
     </header>
   );
@@ -96,35 +109,44 @@ export default function AppHeader(props: Props) {
 function Nav({
   view,
   onChangeView,
+  credentialCount,
+  urlCount,
+  notesCount,
   className,
 }: {
   view: AppView;
   onChangeView: (next: AppView) => void;
+  credentialCount: number;
+  urlCount: number;
+  notesCount: number;
   className?: string;
 }) {
   return (
     <nav
-      className={`flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-100/70 p-0.5 text-xs dark:border-slate-800 dark:bg-slate-900/60 ${
+      className={`flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-slate-100/60 p-1 dark:border-slate-800/60 dark:bg-slate-900/50 ${
         className ?? ""
       }`}
     >
       <TabButton
         active={view === "credentials"}
         onClick={() => onChangeView("credentials")}
-        icon={<IconShield size={13} />}
+        icon={<IconShield size={14} />}
         label="Credentials"
+        badge={credentialCount}
       />
       <TabButton
         active={view === "urls"}
         onClick={() => onChangeView("urls")}
-        icon={<IconGlobe size={13} />}
+        icon={<IconGlobe size={14} />}
         label="URLs"
+        badge={urlCount}
       />
       <TabButton
         active={view === "notes"}
         onClick={() => onChangeView("notes")}
-        icon={<IconNote size={13} />}
+        icon={<IconNote size={14} />}
         label="Notes"
+        badge={notesCount}
       />
     </nav>
   );

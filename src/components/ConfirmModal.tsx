@@ -1,5 +1,5 @@
 import Modal from "./Modal";
-import { IconSpinner } from "./Icon";
+import { IconCheck, IconSpinner, IconTrash, IconX } from "./Icon";
 
 export interface ConfirmState {
   open: boolean;
@@ -35,7 +35,8 @@ export default function ConfirmModal({ state, pending, onCancel, onConfirm }: Pr
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onCancel} disabled={pending}>
-            Cancel
+            <IconX size={16} />
+            <span>Cancel</span>
           </button>
           <button
             type="button"
@@ -43,8 +44,14 @@ export default function ConfirmModal({ state, pending, onCancel, onConfirm }: Pr
             onClick={() => void onConfirm()}
             disabled={pending}
           >
-            {pending && <IconSpinner size={14} />}
-            {pending ? "Working..." : (state.confirmLabel ?? "Confirm")}
+            {pending ? (
+              <IconSpinner size={14} />
+            ) : state.destructive ? (
+              <IconTrash size={16} />
+            ) : (
+              <IconCheck size={16} />
+            )}
+            <span>{pending ? "Working..." : (state.confirmLabel ?? "Confirm")}</span>
           </button>
         </>
       }

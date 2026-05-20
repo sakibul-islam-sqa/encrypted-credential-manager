@@ -16,6 +16,10 @@ import {
   IconX,
 } from "./Icon";
 
+export interface NotesViewHandle {
+  attemptNavigateAway: (cb: () => void) => boolean;
+}
+
 interface Props {
   notes: NoteEntry[];
   selectedId: string | null;
@@ -23,24 +27,48 @@ interface Props {
   onCreate: () => void;
   onUpdate: (id: string, patch: Partial<NoteEntry>) => Promise<void> | void;
   onDelete: (id: string) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export default function NotesView({
-  notes,
-  selectedId,
-  onSelect,
-  onCreate,
-  onUpdate,
-  onDelete,
-}: Props) {
+const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
+  {
+    notes,
+    selectedId,
+    onSelect,
+    onCreate,
+    onUpdate,
+    onDelete,
+    onDirtyChange,
+  },
+  ref
+) {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string>("__ALL__");
   const editorRef = useRef<NoteEditorHandle | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingAction, setPendingAction] = useState<
-    { kind: "select"; id: string | null } | { kind: "create" } | null
+    | { kind: "select"; id: string | null }
+    | { kind: "create" }
+    | { kind: "navigate"; cb: () => void }
+    | null
   >(null);
   const [pendingSaving, setPendingSaving] = useState(false);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      attemptNavigateAway(cb: () => void): boolean {
+        if (!isDirty) return true;
+        setPendingAction({ kind: "navigate", cb });
+        return false;
+      },
+    }),
+    [isDirty]
+  );
 
   function attemptSelect(id: string | null) {
     if (id === selectedId) return;
@@ -63,6 +91,7 @@ export default function NotesView({
     if (!pendingAction) return;
     if (pendingAction.kind === "select") onSelect(pendingAction.id);
     else if (pendingAction.kind === "create") onCreate();
+    else if (pendingAction.kind === "navigate") pendingAction.cb();
     setPendingAction(null);
   }
 
@@ -113,103 +142,172 @@ export default function NotesView({
   const selected = selectedId ? (notes.find((n) => n.id === selectedId) ?? null) : null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside className="card flex max-h-[calc(100vh-220px)] min-h-[60vh] flex-col overflow-hidden p-0 md:sticky md:top-[68px]">
-        <div className="border-b border-slate-200 p-3 dark:border-slate-800/70">
-          <button type="button" className="btn-primary w-full" onClick={attemptCreate}>
-            <IconPlus size={16} /> New note
-          </button>
-          <div className="relative mt-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-[300px_minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)]">
+      <aside className="card flex max-h-[calc(100vh-220px)] flex-col overflow-hidden p-0 md:sticky md:top-[68px] md:min-h-[60vh]">
+        <div className="space-y-3 border-b border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-transparent p-3 dark:border-slate-800/60 dark:from-slate-900/40">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Notes
+              </h3>
+              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                {filtered.length}
+                {filtered.length !== notes.length ? ` / ${notes.length}` : ""}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn-primary !px-2.5 !py-1.5 !text-xs shadow-sm shadow-brand-500/20"
+              onClick={attemptCreate}
+              title="New note"
+            >
+              <IconPlus size={14} />
+              <span>New</span>
+            </button>
+          </div>
+          <div className="relative">
             <IconSearch
               size={14}
               className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
             />
             <input
-              className="input pl-8 text-xs"
+              className="input !py-2 pl-8 pr-8 text-xs"
               placeholder="Search notes..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            {query && (
+              <button
+                type="button"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-200/70 hover:text-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-200"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                title="Clear"
+              >
+                <IconX size={12} />
+              </button>
+            )}
           </div>
           {allTags.length > 0 && (
-            <select
-              className="input mt-2 text-xs"
-              value={tagFilter}
-              onChange={(e) => setTagFilter(e.target.value)}
-            >
-              <option value="__ALL__">All tags</option>
+            <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <TagPill
+                active={tagFilter === "__ALL__"}
+                onClick={() => setTagFilter("__ALL__")}
+                label="All"
+              />
               {allTags.map((t) => (
-                <option key={t} value={t}>
-                  #{t}
-                </option>
+                <TagPill
+                  key={t}
+                  active={tagFilter === t}
+                  onClick={() => setTagFilter(t)}
+                  label={`#${t}`}
+                />
               ))}
-            </select>
+            </div>
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-              {notes.length === 0
-                ? "No notes yet. Create your first one."
-                : "No notes match your search."}
+            <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+              <span className="rounded-full bg-slate-100 p-2.5 text-slate-400 dark:bg-slate-800/60 dark:text-slate-500">
+                {notes.length === 0 ? <IconNote size={18} /> : <IconSearch size={18} />}
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {notes.length === 0
+                  ? "No notes yet. Create your first one."
+                  : "No notes match your search."}
+              </p>
             </div>
           ) : (
-            <ul>
-              {filtered.map((n) => (
-                <li key={n.id}>
-                  <button
-                    type="button"
-                    className={`group flex w-full items-start gap-2 border-b border-slate-100 px-3 py-2.5 text-left transition hover:bg-slate-100/70 dark:border-slate-800/60 dark:hover:bg-slate-800/40 ${
-                      selectedId === n.id ? "bg-brand-50/70 dark:bg-brand-900/20" : ""
-                    }`}
-                    onClick={() => attemptSelect(n.id)}
-                  >
-                    <span
-                      className={`mt-0.5 shrink-0 ${
-                        n.pinned
-                          ? "text-amber-500 dark:text-amber-300"
-                          : "text-slate-300 dark:text-slate-600"
+            <ul className="space-y-0.5 p-1.5">
+              {filtered.map((n) => {
+                const active = selectedId === n.id;
+                const preview = summarize(n.body);
+                return (
+                  <li key={n.id}>
+                    <button
+                      type="button"
+                      className={`group relative flex w-full items-start gap-2.5 overflow-hidden rounded-lg px-2.5 py-2.5 text-left transition-all duration-150 ${
+                        active
+                          ? "bg-brand-50 ring-1 ring-brand-200/70 dark:bg-brand-500/10 dark:ring-brand-400/20"
+                          : "hover:bg-slate-100/70 dark:hover:bg-slate-800/40"
                       }`}
-                      aria-hidden
+                      onClick={() => attemptSelect(n.id)}
                     >
-                      {n.pinned ? <IconStarFilled size={12} /> : <IconStar size={12} />}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                          {n.title || "Untitled"}
-                        </span>
-                        {selectedId === n.id && isDirty && (
+                      <span
+                        className={`absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-brand-500 transition-opacity ${
+                          active ? "opacity-100" : "opacity-0"
+                        }`}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start gap-1.5">
                           <span
-                            className="relative inline-flex h-2 w-2 shrink-0"
-                            title="Unsaved changes"
-                            aria-label="Unsaved changes"
+                            className={`min-w-0 flex-1 truncate text-sm font-semibold tracking-tight ${
+                              active
+                                ? "text-brand-900 dark:text-brand-100"
+                                : "text-slate-800 dark:text-slate-100"
+                            }`}
                           >
-                            <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-60" />
-                            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+                            {n.title || "Untitled"}
                           </span>
-                        )}
-                      </div>
-                      <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
-                        {summarize(n.body) ||
-                          `Last edited ${new Date(n.updatedAt).toLocaleDateString()}`}
-                      </div>
-                      {(n.tags?.length ?? 0) > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {n.tags!.slice(0, 3).map((t) => (
+                          {active && isDirty && (
                             <span
-                              key={t}
-                              className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                              className="relative mt-1.5 inline-flex h-2 w-2 shrink-0"
+                              title="Unsaved changes"
+                              aria-label="Unsaved changes"
                             >
-                              #{t}
+                              <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-60" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
                             </span>
-                          ))}
+                          )}
+                          {n.pinned && (
+                            <span
+                              className="mt-0.5 shrink-0 text-amber-500 dark:text-amber-300"
+                              aria-label="Pinned"
+                              title="Pinned"
+                            >
+                              <IconStarFilled size={12} />
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              ))}
+                        {preview && (
+                          <p className="mt-0.5 line-clamp-1 text-[11.5px] leading-snug text-slate-500 dark:text-slate-400">
+                            {preview}
+                          </p>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] text-slate-400 dark:text-slate-500">
+                          <span className="font-medium">{formatRelativeTime(n.updatedAt)}</span>
+                          {(n.tags?.length ?? 0) > 0 && (
+                            <>
+                              <span aria-hidden>·</span>
+                              <div className="flex min-w-0 flex-wrap gap-1">
+                                {n.tags!.slice(0, 2).map((t) => (
+                                  <span
+                                    key={t}
+                                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                      active
+                                        ? "bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-200"
+                                        : "bg-slate-100 text-slate-500 dark:bg-slate-800/70 dark:text-slate-400"
+                                    }`}
+                                  >
+                                    #{t}
+                                  </span>
+                                ))}
+                                {(n.tags?.length ?? 0) > 2 && (
+                                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                    +{(n.tags?.length ?? 0) - 2}
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -271,6 +369,52 @@ export default function NotesView({
       </Modal>
     </div>
   );
+});
+
+export default NotesView;
+
+function TagPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+        active
+          ? "bg-brand-600 text-white shadow-sm shadow-brand-500/30"
+          : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800/70 dark:text-slate-300 dark:hover:bg-slate-700/80"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const sec = Math.round(diff / 1000);
+  if (sec < 45) return "just now";
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.round(hr / 24);
+  if (day < 7) return `${day}d ago`;
+  if (day < 30) return `${Math.round(day / 7)}w ago`;
+  const d = new Date(ts);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
 }
 
 function summarize(body: string): string {

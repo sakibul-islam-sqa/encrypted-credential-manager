@@ -14,6 +14,7 @@ import CredentialsView from "./components/CredentialsView";
 import ConfirmModal, { type ConfirmState } from "./components/ConfirmModal";
 import ImportModal from "./components/ImportModal";
 import ErrorBoundary from "./components/ErrorBoundary";
+import type { NotesViewHandle } from "./components/NotesView";
 const NotesView = lazy(() => import("./components/NotesView"));
 const UrlsView = lazy(() => import("./components/UrlsView"));
 import type { CredentialEntry, NoteEntry, UrlEntry, Vault } from "./types";
@@ -59,7 +60,7 @@ import {
   type FullBackup,
 } from "./lib/backup";
 import { uid as makeId } from "./lib/id";
-import { IconSpinner } from "./components/Icon";
+import { IconCheck, IconPlus, IconSpinner, IconX } from "./components/Icon";
 import type { AppView } from "./lib/views";
 
 interface UnlockKey {
@@ -103,6 +104,20 @@ function Shell() {
   const [notes, setNotes] = useState<Map<string, NoteEntry>>(new Map());
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [notesLoaded, setNotesLoaded] = useState(false);
+  const [notesDirty, setNotesDirty] = useState(false);
+  const notesViewRef = useRef<NotesViewHandle>(null);
+
+  const changeView = useCallback(
+    (next: AppView) => {
+      if (next === view) return;
+      if (view === "notes" && notesDirty && notesViewRef.current) {
+        const allowed = notesViewRef.current.attemptNavigateAway(() => setView(next));
+        if (!allowed) return;
+      }
+      setView(next);
+    },
+    [view, notesDirty]
+  );
 
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [editingUrl, setEditingUrl] = useState<UrlEntry | null>(null);
@@ -1009,7 +1024,7 @@ function Shell() {
     <div className="min-h-screen">
       <AppHeader
         view={view}
-        onChangeView={setView}
+        onChangeView={changeView}
         credentialCount={vault.entries.length}
         urlCount={(vault.urls ?? []).length}
         notesCount={notes.size}
@@ -1028,12 +1043,14 @@ function Shell() {
         {view === "notes" ? (
           <Suspense fallback={<CenteredSpinner label="Loading notes editor..." inline />}>
             <NotesView
+              ref={notesViewRef}
               notes={Array.from(notes.values())}
               selectedId={selectedNoteId}
               onSelect={setSelectedNoteId}
               onCreate={handleCreateNote}
               onUpdate={handleUpdateNote}
               onDelete={handleDeleteNote}
+              onDirtyChange={setNotesDirty}
             />
           </Suspense>
         ) : view === "urls" ? (
@@ -1091,7 +1108,8 @@ function Shell() {
               }}
               disabled={savingEntry}
             >
-              Cancel
+              <IconX size={16} />
+              <span>Cancel</span>
             </button>
             <button
               type="submit"
@@ -1099,14 +1117,22 @@ function Shell() {
               className="btn-primary"
               disabled={savingEntry}
             >
-              {savingEntry && <IconSpinner size={14} />}
-              {savingEntry
-                ? editing
-                  ? "Saving..."
-                  : "Adding..."
-                : editing
-                  ? "Save changes"
-                  : "Add credential"}
+              {savingEntry ? (
+                <IconSpinner size={14} />
+              ) : editing ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconPlus size={16} />
+              )}
+              <span>
+                {savingEntry
+                  ? editing
+                    ? "Saving..."
+                    : "Adding..."
+                  : editing
+                    ? "Save changes"
+                    : "Add credential"}
+              </span>
             </button>
           </>
         }
@@ -1138,17 +1164,26 @@ function Shell() {
               }}
               disabled={savingUrl}
             >
-              Cancel
+              <IconX size={16} />
+              <span>Cancel</span>
             </button>
             <button type="submit" form="url-form" className="btn-primary" disabled={savingUrl}>
-              {savingUrl && <IconSpinner size={14} />}
-              {savingUrl
-                ? editingUrl
-                  ? "Saving..."
-                  : "Adding..."
-                : editingUrl
-                  ? "Save changes"
-                  : "Add URL"}
+              {savingUrl ? (
+                <IconSpinner size={14} />
+              ) : editingUrl ? (
+                <IconCheck size={16} />
+              ) : (
+                <IconPlus size={16} />
+              )}
+              <span>
+                {savingUrl
+                  ? editingUrl
+                    ? "Saving..."
+                    : "Adding..."
+                  : editingUrl
+                    ? "Save changes"
+                    : "Add URL"}
+              </span>
             </button>
           </>
         }
