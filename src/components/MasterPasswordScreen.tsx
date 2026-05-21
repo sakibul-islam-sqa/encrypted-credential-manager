@@ -221,7 +221,11 @@ export default function MasterPasswordScreen({
           <button className="btn-primary w-full" type="submit" disabled={busy}>
             {isCreate ? <IconKey size={16} /> : <IconUnlock size={16} />}
             {busy
-              ? "Working..."
+              ? mode === "create"
+                ? "Creating master password..."
+                : mode === "migrate"
+                  ? "Encrypting data..."
+                  : "Unlocking..."
               : mode === "create"
                 ? "Create master password"
                 : mode === "migrate"
@@ -238,7 +242,7 @@ export default function MasterPasswordScreen({
               onClick={onForgotMasterPassword}
               disabled={busy}
             >
-              Forgot master password? Reset vault (deletes all credentials)
+              Forgot master password? Reset vault (deletes all saved data)
             </button>
           </div>
         )}

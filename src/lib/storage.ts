@@ -61,13 +61,28 @@ function notesCacheKey(uid: string): string {
 
 export type NotesCache = Record<string, EncryptedNoteDoc>;
 
+function isEncryptedNoteDoc(value: unknown): value is EncryptedNoteDoc {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.ciphertext === "string" &&
+    typeof v.iv === "string" &&
+    typeof v.updatedAt === "number" &&
+    v.schemaVersion === 1
+  );
+}
+
 export function readNotesCache(uid: string): NotesCache | null {
   try {
     const raw = localStorage.getItem(notesCacheKey(uid));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as NotesCache;
+    const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
-    return parsed;
+    const out: NotesCache = {};
+    for (const [id, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (isEncryptedNoteDoc(value)) out[id] = value;
+    }
+    return out;
   } catch {
     return null;
   }

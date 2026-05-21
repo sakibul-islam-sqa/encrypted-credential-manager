@@ -116,6 +116,19 @@ export function getEnvelopeVersion(envelope: unknown): number {
   return 2;
 }
 
+/**
+ * Verify the outer JSON looks like one of our exports. We accept any envelope
+ * carrying a valid encrypted blob, but reject files whose `type` field is set
+ * to something other than our marker (i.e. a file from a different tool).
+ */
+export function isOurBackupEnvelope(envelope: unknown): boolean {
+  const record = asRecord(envelope);
+  if (!record) return false;
+  if (!isEncryptedBackupBlob(record.blob)) return false;
+  if (typeof record.type === "string" && record.type !== BACKUP_TYPE) return false;
+  return true;
+}
+
 /* --------------------------- Three-way merge ------------------------------ */
 
 export interface MergeStats {
@@ -166,5 +179,8 @@ export function downloadBackup(envelope: BackupEnvelope): void {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // Some browsers (Safari, older Firefox) fetch the blob asynchronously after
+  // the click; revoking synchronously can cancel the download. Defer to the
+  // next tick so the browser has a chance to start the transfer.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

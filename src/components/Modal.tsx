@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { IconX } from "./Icon";
 
 interface Props {
@@ -8,22 +8,68 @@ interface Props {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg";
+  titleId?: string;
 }
 
-export default function Modal({ open, title, onClose, children, footer, size = "md" }: Props) {
+export default function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  size = "md",
+  titleId,
+}: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  const autoTitleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 9)}`);
+  const labelId = titleId ?? autoTitleId.current;
+
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
+    restoreFocusRef.current = (document.activeElement as HTMLElement | null) ?? null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
+    // Move focus into the dialog so screen readers/keyboards are oriented
+    // here instead of on the now-inert background. Prefer (1) an element with
+    // an explicit `autoFocus`/`data-autofocus`, then (2) the first focusable
+    // inside the body content (skipping the header close button), then (3)
+    // the dialog itself.
+    const focusTimer = window.setTimeout(() => {
+      const root = dialogRef.current;
+      if (!root) return;
+      const explicit = root.querySelector<HTMLElement>(
+        "[data-autofocus], [autofocus]"
+      );
+      if (explicit) {
+        explicit.focus();
+        return;
+      }
+      const body = root.querySelector<HTMLElement>("[data-modal-body]") ?? root;
+      const focusable = body.querySelector<HTMLElement>(
+        'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+      );
+      (focusable ?? root).focus();
+    }, 0);
+
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      window.clearTimeout(focusTimer);
+      const target = restoreFocusRef.current;
+      if (target && typeof target.focus === "function" && document.contains(target)) {
+        target.focus();
+      }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -37,13 +83,17 @@ export default function Modal({ open, title, onClose, children, footer, size = "
         aria-hidden
       />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
-        className={`relative w-full ${widths[size]} card shadow-glow-lg`}
+        aria-labelledby={labelId}
+        tabIndex={-1}
+        className={`relative w-full ${widths[size]} card shadow-glow-lg outline-none`}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5 dark:border-slate-800/70">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <h2 id={labelId} className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            {title}
+          </h2>
           <button
             type="button"
             className="btn-ghost !px-2 !py-1.5"
@@ -53,7 +103,9 @@ export default function Modal({ open, title, onClose, children, footer, size = "
             <IconX size={16} />
           </button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div data-modal-body className="max-h-[70vh] overflow-y-auto px-5 py-4">
+          {children}
+        </div>
         {footer ? (
           <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-3 dark:border-slate-800/70">
             {footer}

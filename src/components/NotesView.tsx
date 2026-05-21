@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { NoteEntry } from "../types";
+import { FILTER_ALL } from "../lib/constants";
 import RichEditor from "./RichEditor";
 import Modal from "./Modal";
 import EmptyState from "./EmptyState";
@@ -35,7 +36,7 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
   ref
 ) {
   const [query, setQuery] = useState("");
-  const [tagFilter, setTagFilter] = useState<string>("__ALL__");
+  const [tagFilter, setTagFilter] = useState<string>(FILTER_ALL);
   const editorRef = useRef<NoteEditorHandle | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingAction, setPendingAction] = useState<
@@ -117,7 +118,7 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return notes
-      .filter((n) => (tagFilter === "__ALL__" ? true : (n.tags ?? []).includes(tagFilter)))
+      .filter((n) => (tagFilter === FILTER_ALL ? true : (n.tags ?? []).includes(tagFilter)))
       .filter((n) => {
         if (!q) return true;
         const hay = [n.title, n.body, ...(n.tags ?? [])].join(" \n ").toLowerCase();
@@ -183,8 +184,8 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
           {allTags.length > 0 && (
             <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <TagPill
-                active={tagFilter === "__ALL__"}
-                onClick={() => setTagFilter("__ALL__")}
+                active={tagFilter === FILTER_ALL}
+                onClick={() => setTagFilter(FILTER_ALL)}
                 label="All"
               />
               {allTags.map((t) => (
@@ -759,11 +760,13 @@ function markdownToHtml(md: string): string {
   s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/(^|\W)\*([^*]+)\*(\W|$)/g, "$1<em>$2</em>$3");
 
-  // Links
-  s = s.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-  );
+  // Links - sanitize URL to block dangerous schemes (javascript:, data:, vbscript:).
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text: string, rawUrl: string) => {
+    const safe = sanitizeUrl(rawUrl);
+    const label = escapeHtml(text);
+    if (!safe) return label;
+    return `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  });
 
   // Paragraphs from remaining blank-line-separated chunks
   s = s
@@ -786,4 +789,14 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function sanitizeUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Allow only http(s), mailto, tel, and relative/anchor links.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    if (!/^(https?|mailto|tel):/i.test(trimmed)) return null;
+  }
+  return trimmed;
 }

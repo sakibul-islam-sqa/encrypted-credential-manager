@@ -17,6 +17,19 @@ interface Props {
   onConfirm: () => void | Promise<void>;
 }
 
+function pendingLabel(confirmLabel: string | undefined): string {
+  switch (confirmLabel) {
+    case "Sign out":
+      return "Signing out...";
+    case "Delete & start over":
+      return "Resetting vault...";
+    case "Delete":
+      return "Deleting...";
+    default:
+      return "Please wait...";
+  }
+}
+
 /**
  * Re-usable confirm dialog driven by a single `ConfirmState` object. The
  * caller orchestrates the actual action via `onConfirm` and exposes
@@ -51,7 +64,9 @@ export default function ConfirmModal({ state, pending, onCancel, onConfirm }: Pr
             ) : (
               <IconCheck size={16} />
             )}
-            <span>{pending ? "Working..." : (state.confirmLabel ?? "Confirm")}</span>
+            <span>
+              {pending ? pendingLabel(state.confirmLabel) : (state.confirmLabel ?? "Confirm")}
+            </span>
           </button>
         </>
       }
