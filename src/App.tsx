@@ -12,6 +12,7 @@ import AppHeader from "./components/AppHeader";
 import CenteredSpinner from "./components/CenteredSpinner";
 import CredentialsView from "./components/CredentialsView";
 import ConfirmModal, { type ConfirmState } from "./components/ConfirmModal";
+import DeleteAccountModal from "./components/DeleteAccountModal";
 import ImportModal from "./components/ImportModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import type { NotesViewHandle } from "./components/NotesView";
@@ -33,6 +34,7 @@ import {
   deleteAllNotesRemote,
   deleteCloudVault,
   deleteNoteRemote,
+  deleteUserProfile,
   pullAllNotes,
   pullRemoteVault,
   pushEncryptedVault,
@@ -55,6 +57,7 @@ import {
   getEnvelopeVersion,
   isEncryptedBackupBlob,
   isFullBackup,
+  isOurBackupEnvelope,
   isVault,
   mergeById,
   type FullBackup,
@@ -95,6 +98,7 @@ function Shell() {
 
   const [confirm, setConfirm] = useState<ConfirmState>({ open: false });
   const [confirmPending, setConfirmPending] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [savingEntry, setSavingEntry] = useState(false);
 
   const [syncState, setSyncState] = useState<SyncState>("idle");
@@ -152,11 +156,13 @@ function Shell() {
 
     void (async () => {
       const cachedBlob = readEncryptedCache(userUid);
+      let cachedKey: Awaited<ReturnType<typeof readCachedKey>> = null;
 
       if (cachedBlob) {
         setRemote({ kind: "encrypted", doc: cachedBlob });
         setMpMode("unlock");
-        unlockedViaCache = await tryCachedUnlock(userUid, cachedBlob);
+        cachedKey = await readCachedKey(userUid);
+        unlockedViaCache = await tryUnlockWithCachedKey(cachedBlob, cachedKey);
       }
 
       if (!cancelled) setBootstrapping(false);
@@ -167,9 +173,17 @@ function Shell() {
         setRemote(r);
         if (r.kind === "encrypted") {
           writeEncryptedCache(userUid, r.doc);
-          if (!unlockedViaCache) {
-            setMpMode("unlock");
-            await tryCachedUnlock(userUid, r.doc);
+          // If remote is newer than the doc we unlocked from cache, re-decrypt
+          // so the user sees the latest data. Without this we'd silently keep
+          // serving stale vault state and overwrite remote on next persist.
+          const remoteIsNewer =
+            !cachedBlob ||
+            r.doc.ciphertext !== cachedBlob.ciphertext ||
+            r.doc.updatedAt > cachedBlob.updatedAt;
+          if (!unlockedViaCache || remoteIsNewer) {
+            if (!cachedKey) cachedKey = await readCachedKey(userUid);
+            const ok = await tryUnlockWithCachedKey(r.doc, cachedKey);
+            if (!ok && !unlockedViaCache) setMpMode("unlock");
           }
         } else if (r.kind === "legacy") {
           setMpMode("migrate");
@@ -188,8 +202,10 @@ function Shell() {
       }
     })();
 
-    async function tryCachedUnlock(uid: string, doc: EncryptedVaultDoc): Promise<boolean> {
-      const cachedKey = await readCachedKey(uid);
+    async function tryUnlockWithCachedKey(
+      doc: EncryptedVaultDoc,
+      cachedKey: Awaited<ReturnType<typeof readCachedKey>>
+    ): Promise<boolean> {
       if (!cachedKey) return false;
       if (cachedKey.salt !== doc.salt) {
         await clearCachedKey();
@@ -731,11 +747,12 @@ function Shell() {
       setImportError("File is not valid JSON.");
       return;
     }
-    const envelope =
-      parsedEnvelope && typeof parsedEnvelope === "object"
-        ? (parsedEnvelope as Record<string, unknown>)
-        : null;
-    const blob = envelope?.blob;
+    if (!isOurBackupEnvelope(parsedEnvelope)) {
+      setImportError("File doesn't look like a Credential Manager export.");
+      return;
+    }
+    const envelope = parsedEnvelope as Record<string, unknown>;
+    const blob = envelope.blob;
     if (!isEncryptedBackupBlob(blob)) {
       setImportError("File doesn't look like a Credential Manager export.");
       return;
@@ -783,10 +800,13 @@ function Shell() {
         }));
       }
       if (noteChangeCount > 0) {
-        const incomingIds = new Set<string>();
-        for (const n of importedNotes) incomingIds.add(n.id);
+        // Only re-encrypt and push notes that the merge actually replaced or
+        // added; existing notes whose `updatedAt` was newer locally don't
+        // need a network round-trip.
+        const existingByIdAt = new Map(Array.from(notes.values()).map((n) => [n.id, n.updatedAt]));
         for (const note of noteMerge.items) {
-          if (incomingIds.has(note.id)) {
+          const prevUpdatedAt = existingByIdAt.get(note.id);
+          if (prevUpdatedAt === undefined || note.updatedAt > prevUpdatedAt) {
             await persistNote(note);
           }
         }
@@ -843,75 +863,64 @@ function Shell() {
     });
   }
 
-  function handleDeleteAll() {
-    setConfirm({
-      open: true,
-      title: "Delete all credentials?",
-      message:
-        "This will permanently delete the encrypted vault from Firestore and this device. Your account stays. This cannot be undone.",
-      destructive: true,
-      confirmLabel: "Delete everything",
-      onConfirm: async () => {
-        if (!userUid) return;
-        setConfirmPending(true);
-        try {
-          await toast.promise(
-            (async () => {
-              await deleteCloudVault(userUid);
-              await deleteAllNotesRemote(userUid);
-              clearEncryptedCache(userUid);
-              clearNotesCache(userUid);
-              await clearCachedKey();
-            })(),
-            {
-              loading: "Deleting everything...",
-              success: "All data deleted",
-              error: "Failed to delete. Try again.",
-            }
-          );
-          setUnlock(null);
-          setVault(null);
-          setNotes(new Map());
-          setSelectedNoteId(null);
-          setNotesLoaded(false);
-          setRemote({ kind: "missing" });
-          setMpMode("create");
-          setConfirm({ open: false });
-        } catch {
-          // toast handled the error
-        } finally {
-          setConfirmPending(false);
-        }
-      },
-    });
-  }
+  const wipeVaultAndNotes = useCallback(
+    async (uid: string): Promise<void> => {
+      // Idempotent: each helper is a no-op when there's nothing to delete.
+      await deleteCloudVault(uid);
+      await deleteAllNotesRemote(uid);
+      clearEncryptedCache(uid);
+      clearNotesCache(uid);
+      await clearCachedKey();
+    },
+    []
+  );
 
-  function handleForgotMasterPassword() {
+  const wipeUserDataForDelete = useCallback(async () => {
+    if (!userUid) return;
+    await wipeVaultAndNotes(userUid);
+    await deleteUserProfile(userUid);
+  }, [userUid, wipeVaultAndNotes]);
+
+  const onAccountDeleted = useCallback(() => {
+    // onAuthStateChanged will clear `auth.user` and trigger the sign-in view;
+    // we still reset local component state explicitly so there is no flicker
+    // of stale vault/notes between the delete and the auth listener firing.
+    setUnlock(null);
+    setVault(null);
+    setNotes(new Map());
+    setSelectedNoteId(null);
+    setNotesLoaded(false);
+    setRemote(null);
+    setMpMode("create");
+    setDeleteAccountOpen(false);
+    toast.show("Account deleted", "success");
+  }, [toast]);
+
+  // "Clear all my data" (from the user menu while unlocked) and "Forgot
+  // master password / Reset vault" (from the master-password screen) are the
+  // same destructive operation: wipe the encrypted vault + all notes, keep
+  // the Firebase account, and let the user start over with a new master
+  // password. They share this single helper so the dialog copy and the
+  // post-wipe state reset stay in lockstep.
+  function askResetVault() {
     setConfirm({
       open: true,
       title: "Reset vault?",
       message:
-        "Without your master password, your saved credentials are unrecoverable. Resetting deletes them and lets you start over with a new master password.",
+        "This permanently deletes your encrypted vault and all saved data. Your account stays - you can start fresh with a new master password. This cannot be undone.",
       destructive: true,
       confirmLabel: "Delete & start over",
       onConfirm: async () => {
         if (!userUid) return;
         setConfirmPending(true);
         try {
-          await toast.promise(
-            (async () => {
-              await deleteCloudVault(userUid);
-              await deleteAllNotesRemote(userUid);
-              clearEncryptedCache(userUid);
-              clearNotesCache(userUid);
-              await clearCachedKey();
-            })(),
-            {
-              loading: "Resetting vault...",
-              success: "Vault reset. Set a new master password.",
-              error: "Failed to reset. Try again.",
-            }
-          );
+          await toast.promise(wipeVaultAndNotes(userUid), {
+            loading: "Resetting vault...",
+            success: "Vault reset. Set a new master password.",
+            error: "Failed to reset. Try again.",
+          });
+          setUnlock(null);
+          setVault(null);
           setNotes(new Map());
           setSelectedNoteId(null);
           setNotesLoaded(false);
@@ -926,6 +935,11 @@ function Shell() {
         }
       },
     });
+  }
+
+  function handleDeleteAccount() {
+    if (!userUid) return;
+    setDeleteAccountOpen(true);
   }
 
   function lockNow() {
@@ -1009,14 +1023,22 @@ function Shell() {
 
   if (!unlock || !vault) {
     return (
-      <MasterPasswordScreen
-        mode={mpMode}
-        legacyCount={remote?.kind === "legacy" ? remote.doc.entries.length : 0}
-        onSubmit={handleMasterPassword}
-        onForgotMasterPassword={handleForgotMasterPassword}
-        busy={mpBusy}
-        error={mpError}
-      />
+      <>
+        <MasterPasswordScreen
+          mode={mpMode}
+          legacyCount={remote?.kind === "legacy" ? remote.doc.entries.length : 0}
+          onSubmit={handleMasterPassword}
+          onForgotMasterPassword={askResetVault}
+          busy={mpBusy}
+          error={mpError}
+        />
+        <ConfirmModal
+          state={confirm}
+          pending={confirmPending}
+          onCancel={() => setConfirm({ open: false })}
+          onConfirm={() => confirm.onConfirm?.()}
+        />
+      </>
     );
   }
 
@@ -1035,7 +1057,8 @@ function Shell() {
         onImport={() => fileInputRef.current?.click()}
         onExport={exportEncrypted}
         onSignOut={handleSignOut}
-        onDeleteAll={handleDeleteAll}
+        onClearAllData={askResetVault}
+        onDeleteAccount={handleDeleteAccount}
         onLock={lockNow}
       />
 
@@ -1215,6 +1238,13 @@ function Shell() {
         onCancel={() => setConfirm({ open: false })}
         onConfirm={() => confirm.onConfirm?.()}
       />
+
+      <DeleteAccountModal
+        open={deleteAccountOpen}
+        onClose={() => setDeleteAccountOpen(false)}
+        wipeUserData={wipeUserDataForDelete}
+        onDeleted={onAccountDeleted}
+      />
     </div>
   );
 }
@@ -1230,10 +1260,12 @@ async function decodeNotesCache(
         ciphertext: doc.ciphertext,
         iv: doc.iv,
       });
-      if (note?.id) out.set(note.id, note);
-      else out.set(id, { ...(note as NoteEntry), id });
+      if (!note || typeof note !== "object") continue;
+      const resolved: NoteEntry = note.id ? note : { ...note, id };
+      if (!resolved.id) continue;
+      out.set(resolved.id, resolved);
     } catch {
-      // skip un-decryptable
+      // skip un-decryptable note (likely from a different master password)
     }
   }
   return out;

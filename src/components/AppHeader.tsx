@@ -19,7 +19,8 @@ interface Props {
   onImport: () => void;
   onExport: () => void | Promise<void>;
   onSignOut: () => void;
-  onDeleteAll: () => void;
+  onClearAllData: () => void;
+  onDeleteAccount: () => void;
   onLock: () => void;
 }
 
@@ -41,7 +42,8 @@ export default function AppHeader(props: Props) {
     onImport,
     onExport,
     onSignOut,
-    onDeleteAll,
+    onClearAllData,
+    onDeleteAccount,
     onLock,
   } = props;
 
@@ -87,7 +89,8 @@ export default function AppHeader(props: Props) {
             onImport={onImport}
             onExport={onExport}
             onSignOut={onSignOut}
-            onDeleteAll={onDeleteAll}
+            onClearAllData={onClearAllData}
+            onDeleteAccount={onDeleteAccount}
             onLock={onLock}
           />
           <ThemeToggle />

@@ -138,6 +138,17 @@ export async function deleteAllNotesRemote(uid: string): Promise<void> {
   await batch.commit();
 }
 
+export async function deleteUserProfile(uid: string): Promise<void> {
+  const fb = await getFirebase();
+  if (!fb) return;
+  const { doc, deleteDoc } = await import("firebase/firestore");
+  try {
+    await deleteDoc(doc(fb.db, FIRESTORE.users, uid));
+  } catch {
+    // non-fatal - profile is supplementary
+  }
+}
+
 interface UserProfileDoc {
   email: string | null;
   displayName: string | null;

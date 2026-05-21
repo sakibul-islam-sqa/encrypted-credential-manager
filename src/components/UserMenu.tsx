@@ -6,16 +6,24 @@ interface Props {
   onImport: () => void;
   onExport: () => void | Promise<void>;
   onSignOut: () => void;
-  onDeleteAll: () => void;
+  onClearAllData: () => void;
+  onDeleteAccount: () => void;
   onLock: () => void;
 }
 
 /**
  * Avatar + dropdown shown in the top-right of the app shell. Surfaces
  * import/export, "lock vault now", sign-out, and the destructive
- * "delete all my credentials" action.
+ * "clear all my data" and "delete account" actions.
  */
-export default function UserMenu({ onImport, onExport, onSignOut, onDeleteAll, onLock }: Props) {
+export default function UserMenu({
+  onImport,
+  onExport,
+  onSignOut,
+  onClearAllData,
+  onDeleteAccount,
+  onLock,
+}: Props) {
   const { user, sessionExpiresAt } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -133,16 +141,28 @@ export default function UserMenu({ onImport, onExport, onSignOut, onDeleteAll, o
             icon={<IconLogout size={14} />}
             label="Sign out"
           />
+          <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
           <button
             type="button"
             role="menuitem"
             className="btn-ghost w-full justify-start !text-rose-600 hover:!bg-rose-50 dark:!text-rose-300 dark:hover:!bg-rose-900/40"
             onClick={() => {
               setOpen(false);
-              onDeleteAll();
+              onClearAllData();
             }}
           >
-            Delete all my credentials
+            Reset vault (deletes all data)
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="btn-ghost w-full justify-start !text-rose-600 hover:!bg-rose-50 dark:!text-rose-300 dark:hover:!bg-rose-900/40"
+            onClick={() => {
+              setOpen(false);
+              onDeleteAccount();
+            }}
+          >
+            Delete account
           </button>
         </div>
       )}
