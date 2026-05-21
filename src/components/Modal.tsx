@@ -46,9 +46,7 @@ export default function Modal({
     const focusTimer = window.setTimeout(() => {
       const root = dialogRef.current;
       if (!root) return;
-      const explicit = root.querySelector<HTMLElement>(
-        "[data-autofocus], [autofocus]"
-      );
+      const explicit = root.querySelector<HTMLElement>("[data-autofocus], [autofocus]");
       if (explicit) {
         explicit.focus();
         return;

@@ -863,17 +863,14 @@ function Shell() {
     });
   }
 
-  const wipeVaultAndNotes = useCallback(
-    async (uid: string): Promise<void> => {
-      // Idempotent: each helper is a no-op when there's nothing to delete.
-      await deleteCloudVault(uid);
-      await deleteAllNotesRemote(uid);
-      clearEncryptedCache(uid);
-      clearNotesCache(uid);
-      await clearCachedKey();
-    },
-    []
-  );
+  const wipeVaultAndNotes = useCallback(async (uid: string): Promise<void> => {
+    // Idempotent: each helper is a no-op when there's nothing to delete.
+    await deleteCloudVault(uid);
+    await deleteAllNotesRemote(uid);
+    clearEncryptedCache(uid);
+    clearNotesCache(uid);
+    await clearCachedKey();
+  }, []);
 
   const wipeUserDataForDelete = useCallback(async () => {
     if (!userUid) return;
