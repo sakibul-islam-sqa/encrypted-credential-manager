@@ -26,7 +26,7 @@ export const ENVIRONMENTS: Environment[] = [
 export interface CredentialEntry {
   id: string;
   app: string;
-  environment: Environment | string;
+  environment?: Environment | string;
   url?: string;
   username?: string;
   email?: string;

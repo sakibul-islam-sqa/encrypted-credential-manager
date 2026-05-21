@@ -60,7 +60,7 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
     if (initial?.environment && envOptions.includes(String(initial.environment))) {
       return String(initial.environment);
     }
-    return envOptions[0] ?? "";
+    return "";
   });
   const [customEnv, setCustomEnv] = useState<string>(() => {
     if (!initial?.environment) return "";
@@ -83,8 +83,8 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
       if (envMode !== "custom") setEnvMode("custom");
       return;
     }
-    if (envMode === "preset" && !envOptions.includes(environment)) {
-      setEnvironment(envOptions[0]);
+    if (envMode === "preset" && environment && !envOptions.includes(environment)) {
+      setEnvironment("");
     }
     // intentionally only depend on envOptions; user-driven envMode changes
     // shouldn't retrigger this auto-sync.
@@ -103,7 +103,7 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
       .map((t) => t.trim())
       .filter(Boolean);
     const resolvedApp = appMode === "custom" ? customApp.trim() : app;
-    const resolvedEnv = (envMode === "custom" ? customEnv.trim() : environment) || "Other";
+    const resolvedEnv = (envMode === "custom" ? customEnv.trim() : environment.trim()) || undefined;
     onSubmit({
       app: resolvedApp,
       environment: resolvedEnv,
@@ -166,7 +166,7 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
         </div>
 
         <div>
-          <label className="label">Environment *</label>
+          <label className="label">Environment</label>
           <div className="flex gap-2">
             {envMode === "preset" && hasEnvOptions ? (
               <select
@@ -174,6 +174,7 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value)}
               >
+                <option value="">None</option>
                 {envOptions.map((env) => (
                   <option key={env} value={env}>
                     {env}
@@ -186,9 +187,10 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
                 value={customEnv}
                 onChange={(e) => setCustomEnv(e.target.value)}
                 placeholder={
-                  hasEnvOptions ? "Custom environment name" : "Type an environment (e.g. DEV)"
+                  hasEnvOptions
+                    ? "Custom environment name (optional)"
+                    : "Environment (optional, e.g. DEV)"
                 }
-                required
               />
             )}
             {hasEnvOptions && (

@@ -44,9 +44,11 @@ export default function CredentialCard({ entry, onEdit, onDelete }: Props) {
             {entry.app}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className={`chip border ${envColor(String(entry.environment))}`}>
-              {entry.environment}
-            </span>
+            {entry.environment && (
+              <span className={`chip border ${envColor(String(entry.environment))}`}>
+                {entry.environment}
+              </span>
+            )}
             {entry.role && <span className="chip">{entry.role}</span>}
             {entry.tags?.map((t) => (
               <span key={t} className="chip !text-slate-500 dark:!text-slate-400">

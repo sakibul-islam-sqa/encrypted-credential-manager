@@ -543,6 +543,21 @@ function Shell() {
 
   /* ---------------------------- Credentials ----------------------------- */
 
+  function mergeCredentialData(
+    base: CredentialEntry,
+    data: Omit<CredentialEntry, "id" | "createdAt" | "updatedAt">,
+    updatedAt: number
+  ): CredentialEntry {
+    const merged = { ...base, ...data, updatedAt };
+    const env =
+      data.environment === undefined || data.environment === null
+        ? undefined
+        : String(data.environment).trim() || undefined;
+    if (env) merged.environment = env;
+    else delete merged.environment;
+    return merged;
+  }
+
   async function handleSaveEntry(data: Omit<CredentialEntry, "id" | "createdAt" | "updatedAt">) {
     const now = Date.now();
     const isEdit = !!editing;
@@ -555,12 +570,19 @@ function Shell() {
             ? {
                 ...v,
                 entries: v.entries.map((e) =>
-                  e.id === editingId ? { ...editing!, ...data, updatedAt: now } : e
+                  e.id === editingId ? mergeCredentialData(e, data, now) : e
                 ),
               }
             : {
                 ...v,
-                entries: [{ id: makeId(), createdAt: now, updatedAt: now, ...data }, ...v.entries],
+                entries: [
+                  mergeCredentialData(
+                    { id: makeId(), createdAt: now, updatedAt: now, app: data.app },
+                    data,
+                    now
+                  ),
+                  ...v.entries,
+                ],
               }
         ),
         {
@@ -582,7 +604,9 @@ function Shell() {
     setConfirm({
       open: true,
       title: "Delete credential?",
-      message: `This will permanently remove "${entry.app}" (${entry.environment}). This cannot be undone.`,
+      message: `This will permanently remove "${entry.app}"${
+        entry.environment ? ` (${entry.environment})` : ""
+      }. This cannot be undone.`,
       destructive: true,
       confirmLabel: "Delete",
       onConfirm: async () => {

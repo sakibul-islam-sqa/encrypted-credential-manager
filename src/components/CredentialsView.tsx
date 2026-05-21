@@ -31,7 +31,9 @@ export default function CredentialsView({ entries, onAdd, onEdit, onDelete }: Pr
 
   const knownEnvs = useMemo(() => {
     const set = new Set<string>();
-    entries.forEach((e) => set.add(String(e.environment)));
+    entries.forEach((e) => {
+      if (e.environment) set.add(String(e.environment));
+    });
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [entries]);
 
@@ -39,12 +41,14 @@ export default function CredentialsView({ entries, onAdd, onEdit, onDelete }: Pr
     const q = query.trim().toLowerCase();
     return entries
       .filter((e) => (appFilter === FILTER_ALL ? true : e.app === appFilter))
-      .filter((e) => (envFilter === FILTER_ALL ? true : String(e.environment) === envFilter))
+      .filter((e) =>
+        envFilter === FILTER_ALL ? true : !!e.environment && String(e.environment) === envFilter
+      )
       .filter((e) => {
         if (!q) return true;
         const hay = [
           e.app,
-          String(e.environment),
+          e.environment ? String(e.environment) : "",
           e.url,
           e.username,
           e.email,
