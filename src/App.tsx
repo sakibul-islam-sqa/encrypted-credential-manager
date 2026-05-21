@@ -10,6 +10,7 @@ import { type SyncState } from "./components/SyncStatus";
 import UrlForm from "./components/UrlForm";
 import AppHeader from "./components/AppHeader";
 import CenteredSpinner from "./components/CenteredSpinner";
+import TabRefreshOverlay from "./components/TabRefreshOverlay";
 import CredentialsView from "./components/CredentialsView";
 import ConfirmModal, { type ConfirmState } from "./components/ConfirmModal";
 import DeleteAccountModal from "./components/DeleteAccountModal";
@@ -41,6 +42,7 @@ import {
   pushNote,
   type EncryptedNoteDoc,
   type EncryptedVaultDoc,
+  type RemoteNote,
   type RemoteVault,
 } from "./lib/sync";
 import { decryptJson, deriveKey, encryptJson, generateSalt } from "./lib/cryptoZK";
@@ -64,7 +66,7 @@ import {
 } from "./lib/backup";
 import { uid as makeId } from "./lib/id";
 import { IconCheck, IconPlus, IconSpinner, IconX } from "./components/Icon";
-import type { AppView } from "./lib/views";
+import { TAB_REFRESH_COPY, type AppView } from "./lib/views";
 
 interface UnlockKey {
   key: CryptoKey;
@@ -103,6 +105,8 @@ function Shell() {
 
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [lastSyncedAt, setLastSyncedAt] = useState<number | undefined>(undefined);
+  const [tabRefreshing, setTabRefreshing] = useState(false);
+  const [tabRefreshTarget, setTabRefreshTarget] = useState<AppView>("credentials");
 
   const [view, setView] = useState<AppView>("credentials");
   const [notes, setNotes] = useState<Map<string, NoteEntry>>(new Map());
@@ -110,18 +114,8 @@ function Shell() {
   const [notesLoaded, setNotesLoaded] = useState(false);
   const [notesDirty, setNotesDirty] = useState(false);
   const notesViewRef = useRef<NotesViewHandle>(null);
-
-  const changeView = useCallback(
-    (next: AppView) => {
-      if (next === view) return;
-      if (view === "notes" && notesDirty && notesViewRef.current) {
-        const allowed = notesViewRef.current.attemptNavigateAway(() => setView(next));
-        if (!allowed) return;
-      }
-      setView(next);
-    },
-    [view, notesDirty]
-  );
+  const refreshInFlightRef = useRef(false);
+  const pendingRefreshTargetRef = useRef<AppView | null>(null);
 
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [editingUrl, setEditingUrl] = useState<UrlEntry | null>(null);
@@ -270,20 +264,10 @@ function Shell() {
       try {
         const remoteNotes = await pullAllNotes(userUid);
         if (cancelled) return;
-        const nextCache: NotesCache = {};
-        const nextNotes = new Map<string, NoteEntry>();
-        for (const { id, doc } of remoteNotes) {
-          nextCache[id] = doc;
-          try {
-            const note = await decryptJson<NoteEntry>(unlock.key, {
-              ciphertext: doc.ciphertext,
-              iv: doc.iv,
-            });
-            if (note?.id) nextNotes.set(note.id, note);
-          } catch {
-            // skip un-decryptable note (likely from a different master password)
-          }
-        }
+        const { cache: nextCache, notes: nextNotes } = await remoteNotesToState(
+          remoteNotes,
+          unlock.key
+        );
         if (cancelled) return;
         writeNotesCache(userUid, nextCache);
         setNotes(nextNotes);
@@ -297,6 +281,88 @@ function Shell() {
       cancelled = true;
     };
   }, [userUid, unlock, notesLoaded]);
+
+  const refreshFromRemote = useCallback(
+    async (target: AppView) => {
+      if (!userUid || !unlock) return;
+      if (refreshInFlightRef.current) {
+        pendingRefreshTargetRef.current = target;
+        setTabRefreshTarget(target);
+        return;
+      }
+      refreshInFlightRef.current = true;
+      setTabRefreshTarget(target);
+      setTabRefreshing(true);
+      setSyncState((s) => (s === "offline" ? "offline" : "syncing"));
+      let ok = false;
+      try {
+        if (target === "notes") {
+          const remoteNotes = await pullAllNotes(userUid);
+          const { cache: nextCache, notes: nextNotes } = await remoteNotesToState(
+            remoteNotes,
+            unlock.key
+          );
+          writeNotesCache(userUid, nextCache);
+          setNotes(nextNotes);
+          setNotesLoaded(true);
+        } else {
+          const r = await pullRemoteVault(userUid);
+          if (r.kind === "encrypted") {
+            const cachedBlob = readEncryptedCache(userUid);
+            const remoteIsNewer =
+              !vault ||
+              !cachedBlob ||
+              r.doc.ciphertext !== cachedBlob.ciphertext ||
+              r.doc.updatedAt > vault.updatedAt;
+            writeEncryptedCache(userUid, r.doc);
+            setRemote(r);
+            if (remoteIsNewer) {
+              const plain = await decryptJson<Vault>(unlock.key, {
+                ciphertext: r.doc.ciphertext,
+                iv: r.doc.iv,
+              });
+              if (plain?.version === 1 && Array.isArray(plain.entries)) {
+                setVault(plain);
+              }
+            }
+          }
+        }
+        ok = true;
+      } catch {
+        setSyncState(navigator.onLine ? "error" : "offline");
+      } finally {
+        refreshInFlightRef.current = false;
+        if (ok) {
+          setLastSyncedAt(Date.now());
+          setSyncState("synced");
+        }
+        const pending = pendingRefreshTargetRef.current;
+        pendingRefreshTargetRef.current = null;
+        if (pending) {
+          void refreshFromRemote(pending);
+        } else {
+          setTabRefreshing(false);
+        }
+      }
+    },
+    [userUid, unlock, vault]
+  );
+
+  const changeView = useCallback(
+    (next: AppView) => {
+      if (next === view) return;
+      const finish = () => {
+        setView(next);
+        void refreshFromRemote(next);
+      };
+      if (view === "notes" && notesDirty && notesViewRef.current) {
+        const allowed = notesViewRef.current.attemptNavigateAway(finish);
+        if (!allowed) return;
+      }
+      finish();
+    },
+    [view, notesDirty, refreshFromRemote]
+  );
 
   const handleMasterPassword = useCallback(
     async (pw: string, remember: RememberDuration) => {
@@ -1084,48 +1150,54 @@ function Shell() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {view === "notes" ? (
-          <Suspense fallback={<CenteredSpinner label="Loading notes editor..." inline />}>
-            <NotesView
-              ref={notesViewRef}
-              notes={Array.from(notes.values())}
-              selectedId={selectedNoteId}
-              onSelect={setSelectedNoteId}
-              onCreate={handleCreateNote}
-              onUpdate={handleUpdateNote}
-              onDelete={handleDeleteNote}
-              onDirtyChange={setNotesDirty}
-            />
-          </Suspense>
-        ) : view === "urls" ? (
-          <Suspense fallback={<CenteredSpinner label="Loading URLs..." inline />}>
-            <UrlsView
-              urls={vault.urls ?? []}
+        <TabRefreshOverlay
+          loading={tabRefreshing}
+          title={TAB_REFRESH_COPY[tabRefreshTarget].title}
+          subtitle={TAB_REFRESH_COPY[tabRefreshTarget].subtitle}
+        >
+          {view === "notes" ? (
+            <Suspense fallback={<CenteredSpinner label="Loading notes editor..." inline />}>
+              <NotesView
+                ref={notesViewRef}
+                notes={Array.from(notes.values())}
+                selectedId={selectedNoteId}
+                onSelect={setSelectedNoteId}
+                onCreate={handleCreateNote}
+                onUpdate={handleUpdateNote}
+                onDelete={handleDeleteNote}
+                onDirtyChange={setNotesDirty}
+              />
+            </Suspense>
+          ) : view === "urls" ? (
+            <Suspense fallback={<CenteredSpinner label="Loading URLs..." inline />}>
+              <UrlsView
+                urls={vault.urls ?? []}
+                onAdd={() => {
+                  setEditingUrl(null);
+                  setUrlModalOpen(true);
+                }}
+                onEdit={(entry) => {
+                  setEditingUrl(entry);
+                  setUrlModalOpen(true);
+                }}
+                onDelete={askDeleteUrl}
+              />
+            </Suspense>
+          ) : (
+            <CredentialsView
+              entries={vault.entries}
               onAdd={() => {
-                setEditingUrl(null);
-                setUrlModalOpen(true);
+                setEditing(null);
+                setModalOpen(true);
               }}
               onEdit={(entry) => {
-                setEditingUrl(entry);
-                setUrlModalOpen(true);
+                setEditing(entry);
+                setModalOpen(true);
               }}
-              onDelete={askDeleteUrl}
+              onDelete={askDelete}
             />
-          </Suspense>
-        ) : (
-          <CredentialsView
-            entries={vault.entries}
-            onAdd={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-            onEdit={(entry) => {
-              setEditing(entry);
-              setModalOpen(true);
-            }}
-            onDelete={askDelete}
-          />
-        )}
+          )}
+        </TabRefreshOverlay>
 
         <footer className="mt-12 border-t border-slate-200 pt-4 text-center text-[11px] text-slate-500 dark:border-slate-800/60 dark:text-slate-500">
           End-to-end encrypted with AES-256-GCM. Master password never leaves this browser.
@@ -1268,6 +1340,30 @@ function Shell() {
       />
     </div>
   );
+}
+
+async function remoteNotesToState(
+  remoteNotes: RemoteNote[],
+  key: CryptoKey
+): Promise<{ cache: NotesCache; notes: Map<string, NoteEntry> }> {
+  const cache: NotesCache = {};
+  const notes = new Map<string, NoteEntry>();
+  for (const { id, doc } of remoteNotes) {
+    cache[id] = doc;
+    try {
+      const note = await decryptJson<NoteEntry>(key, {
+        ciphertext: doc.ciphertext,
+        iv: doc.iv,
+      });
+      if (!note || typeof note !== "object") continue;
+      const resolved: NoteEntry = note.id ? note : { ...note, id };
+      if (!resolved.id) continue;
+      notes.set(resolved.id, resolved);
+    } catch {
+      // skip un-decryptable note (likely from a different master password)
+    }
+  }
+  return { cache, notes };
 }
 
 async function decodeNotesCache(

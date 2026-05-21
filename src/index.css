@@ -88,6 +88,18 @@
   animation: toast-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes tab-refresh-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+.tab-refresh-shimmer {
+  animation: tab-refresh-shimmer 1.4s ease-in-out infinite;
+}
+
 /* Custom scrollbar */
 *::-webkit-scrollbar {
   width: 10px;
