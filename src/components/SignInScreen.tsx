@@ -16,10 +16,12 @@ export default function SignInScreen() {
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     emailRef.current?.focus();
+    setInfo(null);
   }, [mode]);
 
   if (!cloudEnabled) {
@@ -42,6 +44,7 @@ export default function SignInScreen() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setInfo(null);
     if (!email.trim()) {
       setError("Please enter your email.");
       return;
@@ -50,8 +53,12 @@ export default function SignInScreen() {
     try {
       if (mode === "reset") {
         await sendPasswordReset(email);
-        toast.show("Password reset email sent", "success");
-        setMode("signin");
+        // Firebase's email-enumeration protection means we cannot tell from
+        // the client whether the email is registered or uses a password
+        // provider. Show a soft hint that covers all cases.
+        setInfo(
+          "If a password account exists for this email, a reset link is on the way. Check your spam folder. Google sign-in accounts don’t have a password to reset — use “Continue with Google” instead."
+        );
       } else if (mode === "signup") {
         if (password.length < 6) {
           setError("Password must be at least 6 characters.");
@@ -189,6 +196,12 @@ export default function SignInScreen() {
               {error && (
                 <div className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200">
                   {error}
+                </div>
+              )}
+
+              {info && (
+                <div className="rounded-md border border-brand-300 bg-brand-50 px-3 py-2 text-sm text-brand-800 dark:border-brand-800/60 dark:bg-brand-950/40 dark:text-brand-200">
+                  {info}
                 </div>
               )}
 
