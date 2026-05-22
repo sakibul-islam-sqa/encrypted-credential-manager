@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import ThemeToggle from "./ThemeToggle";
 import { IconEye, IconEyeOff, IconKey, IconShield, IconUnlock, IconUser } from "./Icon";
+import PasswordStrengthMeter from "./PasswordStrengthMeter";
 import {
   readRememberPref,
   writeRememberPref,
@@ -150,6 +151,7 @@ export default function MasterPasswordScreen({
                 {showPw ? <IconEyeOff size={16} /> : <IconEye size={16} />}
               </button>
             </div>
+            {isCreate && <PasswordStrengthMeter password={pw} />}
           </div>
 
           {isCreate && (
