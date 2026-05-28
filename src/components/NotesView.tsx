@@ -212,7 +212,7 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
               </p>
             </div>
           ) : (
-            <ul className="space-y-0.5 p-1.5">
+            <ul className="space-y-2 p-1.5">
               {filtered.map((n) => {
                 const active = selectedId === n.id;
                 const preview = summarize(n.body);
@@ -220,10 +220,10 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
                   <li key={n.id}>
                     <button
                       type="button"
-                      className={`group relative flex w-full items-start gap-2.5 overflow-hidden rounded-lg px-2.5 py-2.5 text-left transition-all duration-150 ${
+                      className={`group relative flex w-full items-start gap-2.5 overflow-hidden rounded-lg border px-2.5 py-2.5 text-left transition-all duration-150 ${
                         active
-                          ? "bg-brand-50 ring-1 ring-brand-200/70 dark:bg-brand-500/10 dark:ring-brand-400/20"
-                          : "hover:bg-slate-100/70 dark:hover:bg-slate-800/40"
+                          ? "border-brand-200/70 bg-brand-50 ring-1 ring-brand-200/70 dark:border-brand-400/20 dark:bg-brand-500/10 dark:ring-brand-400/20"
+                          : "border-slate-200/70 hover:bg-slate-100/70 dark:border-slate-800/60 dark:hover:bg-slate-800/40"
                       }`}
                       onClick={() => attemptSelect(n.id)}
                     >
