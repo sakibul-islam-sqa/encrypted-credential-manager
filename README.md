@@ -45,23 +45,24 @@ Sign in with **email/password or Google** for identity, then unlock your vault w
 
 ## Tech
 
-- **React 18** + **TypeScript** (strict mode, no `any`, no `console.log`)
-- **Vite 5** for build & dev
-- **Tailwind CSS 3** for styling
+- **React 19** + **TypeScript 6** (strict mode, no `any`, no `console.log`)
+- **Vite 8** for build & dev
+- **Tailwind CSS 4** (via `@tailwindcss/vite` plugin) for styling
 - **TipTap 3** for the rich-text notes editor
-- **Firebase Auth + Firestore** (lazy-loaded into separate chunks)
+- **Firebase 12** Auth + Firestore (lazy-loaded into separate chunks)
 - Native **Web Crypto API** for AES-GCM + PBKDF2 (no extra crypto dependencies)
 - **LocalStorage** (encrypted blob cache + session metadata) + **IndexedDB** (non-extractable derived key cache)
-- **ESLint flat config** + **Prettier** + **EditorConfig**
-- **GitHub Actions CI** (lint + typecheck + build on Node 20 & 22)
+- **ESLint 10 flat config** + **Prettier 3** + **EditorConfig**
+- **Husky + lint-staged** pre-commit hook auto-formats staged files
+- **GitHub Actions CI** (format check + lint + typecheck + build on Node 24)
 - **Root ErrorBoundary** so a single render error never takes down the whole app
 
 ## Local development
 
-Requires **Node 20+** (see `.nvmrc`). Run:
+Requires **Node 24+** and **npm 11+** (see `.nvmrc` and `engines` in `package.json`). Run:
 
 ```bash
-nvm use            # picks Node 20
+nvm use            # picks Node 24
 npm install
 npm run dev
 ```
@@ -166,7 +167,7 @@ The repo is preconfigured for Netlify via `netlify.toml`.
 3. Pick the repo. Netlify will read `netlify.toml` and use:
    - Build command: `npm run build`
    - Publish directory: `dist`
-   - Node version: 20
+   - Node version: 24
 4. **If you want cloud sync**: Site settings -> Build & deploy -> Environment -> add the six `VITE_FIREBASE_*` variables from your `.env.local`. Trigger a redeploy after adding them.
 5. Click Deploy. Done. Every push to your default branch redeploys automatically.
 
@@ -264,48 +265,52 @@ interface CredentialEntry {
 
 ```
 src/
-├── App.tsx                # Top-level shell: bootstrap + state orchestration
-├── main.tsx               # React root + StrictMode
-├── index.css              # Tailwind layer + prose-editor styles
-├── types.ts               # Domain types (CredentialEntry, NoteEntry, etc.)
-├── lib/                   # Pure data layer - no React
-│   ├── backup.ts          # Encrypted import/export envelope + merge logic
-│   ├── clipboard.ts       # Secure-context clipboard fallback
-│   ├── constants.ts       # Storage keys, sentinels, TTL, Firestore paths
-│   ├── crypto.ts          # CSPRNG password generator
-│   ├── cryptoZK.ts        # AES-GCM-256 + PBKDF2 (Web Crypto API)
-│   ├── envColor.ts        # Env name -> Tailwind chip color
-│   ├── firebase.ts        # Lazy-init Firebase + auth-error translator
-│   ├── id.ts              # randomUUID with fallback
-│   ├── keyCache.ts        # IndexedDB non-extractable CryptoKey cache
-│   ├── storage.ts         # LocalStorage encrypted blob cache + session
-│   ├── sync.ts            # Firestore vault + notes + user-profile sync
-│   └── views.ts           # AppView union
-└── components/            # All React UI
-    ├── AppHeader.tsx      # Sticky header with brand, tabs, user menu
-    ├── AuthProvider.tsx   # Firebase Auth context + 7-day session
+├── App.tsx                  # Top-level shell: bootstrap + state orchestration
+├── main.tsx                 # React root + StrictMode
+├── index.css                # Tailwind v4 layer + prose-editor styles
+├── types.ts                 # Domain types (CredentialEntry, NoteEntry, etc.)
+├── lib/                     # Pure data layer - no React
+│   ├── backup.ts            # Encrypted import/export envelope + merge logic
+│   ├── clipboard.ts         # Secure-context clipboard fallback
+│   ├── constants.ts         # Storage keys, sentinels, TTL, Firestore paths
+│   ├── crypto.ts            # CSPRNG password generator
+│   ├── cryptoZK.ts          # AES-GCM-256 + PBKDF2 (Web Crypto API)
+│   ├── envColor.ts          # Env name -> Tailwind chip color
+│   ├── firebase.ts          # Lazy-init Firebase + auth-error translator
+│   ├── id.ts                # randomUUID with fallback
+│   ├── keyCache.ts          # IndexedDB non-extractable CryptoKey cache
+│   ├── passwordStrength.ts  # Master password strength scoring
+│   ├── storage.ts           # LocalStorage encrypted blob cache + session
+│   ├── sync.ts              # Firestore vault + notes + user-profile sync
+│   └── views.ts             # AppView union
+└── components/              # All React UI
+    ├── AppHeader.tsx        # Sticky header with brand, tabs, user menu
+    ├── AuthProvider.tsx     # Firebase Auth context + 7-day session
     ├── CenteredSpinner.tsx
-    ├── ConfirmModal.tsx   # Generic destructive/info confirm dialog
+    ├── ConfirmModal.tsx     # Generic destructive/info confirm dialog
     ├── CredentialCard.tsx
     ├── CredentialForm.tsx
-    ├── CredentialsView.tsx # Search/filter + grouped card grid
-    ├── EmptyState.tsx     # Shared empty-state card (3 views use it)
-    ├── ErrorBoundary.tsx  # Root error boundary
-    ├── Icon.tsx           # All SVG icons
+    ├── CredentialsView.tsx  # Search/filter + grouped card grid
+    ├── DeleteAccountModal.tsx # Account deletion confirmation flow
+    ├── EmptyState.tsx       # Shared empty-state card (3 views use it)
+    ├── ErrorBoundary.tsx    # Root error boundary
+    ├── Icon.tsx             # All SVG icons
     ├── ImportModal.tsx
     ├── MasterPasswordScreen.tsx
-    ├── Modal.tsx          # Base modal with focus & scroll lock
-    ├── NotesView.tsx      # Notes list + selected-note editor
-    ├── RichEditor.tsx     # TipTap toolbar + editor + status bar
+    ├── Modal.tsx            # Base modal with focus & scroll lock
+    ├── NotesView.tsx        # Notes list + selected-note editor
+    ├── PasswordStrengthMeter.tsx # Visual strength meter for master pwd
+    ├── RichEditor.tsx       # TipTap toolbar + editor + status bar
     ├── SignInScreen.tsx
     ├── SyncStatus.tsx
     ├── TabButton.tsx
-    ├── Theme.tsx          # Theme context + system-preference sync
+    ├── TabRefreshOverlay.tsx # Overlay while a tab's data reloads
+    ├── Theme.tsx            # Theme context + system-preference sync
     ├── ThemeToggle.tsx
-    ├── Toast.tsx          # Toast provider + promise() helper
+    ├── Toast.tsx            # Toast provider + promise() helper
     ├── UrlForm.tsx
-    ├── UrlsView.tsx       # App x Variant x Environment URL matrix
-    └── UserMenu.tsx       # Avatar dropdown (import/export/lock/signout)
+    ├── UrlsView.tsx         # App x Variant x Environment URL matrix
+    └── UserMenu.tsx         # Avatar dropdown (import/export/lock/signout)
 ```
 
 Conventions:
