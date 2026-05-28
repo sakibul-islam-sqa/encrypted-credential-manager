@@ -856,10 +856,7 @@ function CodeBlockView({ node, updateAttributes, editor }: ReactNodeViewProps) {
   }
 
   return (
-    <NodeViewWrapper
-      className={`codeblock-shell group ${wrap ? "is-wrap" : ""}`}
-      as="div"
-    >
+    <NodeViewWrapper className={`codeblock-shell group ${wrap ? "is-wrap" : ""}`} as="div">
       <div className="codeblock-header" contentEditable={false}>
         <span className="codeblock-dots" aria-hidden="true">
           <span />

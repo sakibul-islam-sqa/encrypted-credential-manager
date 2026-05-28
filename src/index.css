@@ -581,7 +581,9 @@ html.dark .prose-editor .codeblock-copy.is-copied:hover {
   padding: 14px 16px;
   font-size: 12.75px;
   line-height: 1.65;
-  font-feature-settings: "liga" 1, "calt" 1;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
 }
 html.dark .prose-editor .codeblock-shell pre {
   color: rgb(226, 232, 240);
