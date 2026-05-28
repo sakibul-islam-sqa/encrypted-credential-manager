@@ -14,7 +14,7 @@ interface Props {
   notesCount: number;
   syncState: SyncState;
   lastSyncedAt?: number;
-  fileInputRef: RefObject<HTMLInputElement>;
+  fileInputRef: RefObject<HTMLInputElement | null>;
   onPickImportFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImport: () => void;
   onExport: () => void | Promise<void>;

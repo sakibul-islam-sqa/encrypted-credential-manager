@@ -31,6 +31,13 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // The React Compiler lint rules in eslint-plugin-react-hooks v7 assume
+      // the codebase opts into the Compiler. We don't, so disable them until
+      // we adopt it.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/preserve-manual-memoization": "off",
       "react-refresh/only-export-components": [
         "warn",
         {
