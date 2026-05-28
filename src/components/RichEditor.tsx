@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import {
+  useEditor,
+  EditorContent,
+  NodeViewContent,
+  NodeViewWrapper,
+  ReactNodeViewRenderer,
+  type Editor,
+  type ReactNodeViewProps,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -29,6 +37,7 @@ import {
   IconCheck,
   IconCodeBlock,
   IconCodeInline,
+  IconCopy,
   IconExternal,
   IconHeading1,
   IconHeading2,
@@ -47,6 +56,7 @@ import {
   IconType,
   IconUndo,
   IconUnlink,
+  IconWrap,
   IconX,
 } from "./Icon";
 
@@ -68,6 +78,30 @@ lowlight.register("html", xml);
 lowlight.register("xml", xml);
 lowlight.register("markdown", markdown);
 lowlight.register("md", markdown);
+
+const CODE_LANGUAGES: Array<{ id: string; label: string }> = [
+  { id: "plaintext", label: "Plain text" },
+  { id: "bash", label: "Bash" },
+  { id: "css", label: "CSS" },
+  { id: "html", label: "HTML" },
+  { id: "javascript", label: "JavaScript" },
+  { id: "json", label: "JSON" },
+  { id: "markdown", label: "Markdown" },
+  { id: "python", label: "Python" },
+  { id: "sql", label: "SQL" },
+  { id: "typescript", label: "TypeScript" },
+  { id: "xml", label: "XML" },
+  { id: "yaml", label: "YAML" },
+];
+
+const CodeBlockWithControls = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlockView);
+  },
+});
+
+// Keep the editor's selection intact when a header button is clicked.
+const preventBlur = (e: React.MouseEvent) => e.preventDefault();
 
 interface Props {
   content: string;
@@ -101,7 +135,7 @@ export default function RichEditor({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
-      CodeBlockLowlight.configure({
+      CodeBlockWithControls.configure({
         lowlight,
         defaultLanguage: "plaintext",
       }),
@@ -747,5 +781,170 @@ function TButton({
     >
       {children}
     </button>
+  );
+}
+
+/* --------------------------- Code block view -------------------------- */
+
+function CodeBlockView({ node, updateAttributes, editor }: ReactNodeViewProps) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [wrap, setWrap] = useState(false);
+  const [canEdit, setCanEdit] = useState(editor.isEditable);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const rawLang = (node.attrs.language as string | null | undefined) || "plaintext";
+  const current = CODE_LANGUAGES.find((l) => l.id === rawLang) || {
+    id: rawLang,
+    label: rawLang,
+  };
+
+  useEffect(() => {
+    // `update` is emitted by Tiptap on doc changes AND from setEditable.
+    const sync = () => setCanEdit(editor.isEditable);
+    editor.on("update", sync);
+    return () => {
+      editor.off("update", sync);
+    };
+  }, [editor]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  async function copyCode(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const text = node.textContent ?? "";
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        /* ignore */
+      }
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1400);
+  }
+
+  function pickLanguage(id: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    updateAttributes({ language: id });
+    setOpen(false);
+  }
+
+  return (
+    <NodeViewWrapper
+      className={`codeblock-shell group ${wrap ? "is-wrap" : ""}`}
+      as="div"
+    >
+      <div className="codeblock-header" contentEditable={false}>
+        <span className="codeblock-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
+
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onMouseDown={preventBlur}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!canEdit) return;
+              setOpen((v) => !v);
+            }}
+            disabled={!canEdit}
+            title={canEdit ? "Change language" : `Language: ${current.label}`}
+            className={`codeblock-btn codeblock-lang ${open ? "is-open" : ""} ${
+              !canEdit ? "is-readonly" : ""
+            }`}
+          >
+            <span className="codeblock-lang-dot" aria-hidden="true" />
+            <span>{current.label}</span>
+            {canEdit && <IconChevronDown size={10} className="codeblock-lang-chev" />}
+          </button>
+          {open && canEdit && (
+            <div className="codeblock-menu" role="listbox">
+              {CODE_LANGUAGES.map((opt) => {
+                const active = opt.id === current.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onMouseDown={preventBlur}
+                    onClick={(e) => pickLanguage(opt.id, e)}
+                    className={`codeblock-menu-item ${active ? "is-active" : ""}`}
+                  >
+                    <span className={`codeblock-lang-swatch swatch-${opt.id}`} aria-hidden="true" />
+                    <span className="codeblock-menu-label">{opt.label}</span>
+                    {active && <IconCheck size={12} className="codeblock-menu-check" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <span className="codeblock-spacer" />
+
+        <button
+          type="button"
+          onMouseDown={preventBlur}
+          onClick={(e) => {
+            e.stopPropagation();
+            setWrap((v) => !v);
+          }}
+          title={wrap ? "Disable line wrap" : "Wrap long lines"}
+          aria-label="Toggle line wrap"
+          aria-pressed={wrap}
+          className={`codeblock-btn codeblock-wrap ${wrap ? "is-on" : ""}`}
+        >
+          <IconWrap size={12} />
+          <span>Wrap</span>
+        </button>
+
+        <button
+          type="button"
+          onMouseDown={preventBlur}
+          onClick={copyCode}
+          title={copied ? "Copied to clipboard" : "Copy code"}
+          aria-label="Copy code"
+          className={`codeblock-btn codeblock-copy ${copied ? "is-copied" : ""}`}
+        >
+          <span className="codeblock-copy-icon" aria-hidden="true">
+            {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+          </span>
+          <span className="codeblock-copy-label">{copied ? "Copied!" : "Copy"}</span>
+        </button>
+      </div>
+      <pre>
+        <NodeViewContent<"code"> as="code" className={`hljs language-${current.id}`} />
+      </pre>
+    </NodeViewWrapper>
   );
 }

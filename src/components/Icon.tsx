@@ -323,6 +323,14 @@ export const IconCodeBlock = (p: IconProps) => (
     <path d="m15 9 3 3-3 3" />
   </svg>
 );
+export const IconWrap = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 6h18" />
+    <path d="M3 12h15a3 3 0 0 1 0 6h-4" />
+    <path d="m16 15-2 3 2 3" />
+    <path d="M3 18h7" />
+  </svg>
+);
 export const IconMinus = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M5 12h14" />

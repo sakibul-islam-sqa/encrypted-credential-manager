@@ -225,6 +225,367 @@ html.dark .prose-editor code {
   overflow-x: auto;
   box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02) inset;
 }
+
+/* -------------------- Code block "window" UI -------------------- */
+.prose-editor .codeblock-shell {
+  position: relative;
+  margin: 0.9rem 0;
+  border-radius: 12px;
+  border: 1px solid rgb(226, 232, 240);
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(99, 102, 241, 0.04), transparent 60%),
+    linear-gradient(180deg, rgb(252, 253, 255), rgb(248, 250, 252));
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.03) inset,
+    0 6px 18px -10px rgba(15, 23, 42, 0.18);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.prose-editor .codeblock-shell:hover {
+  border-color: rgb(199, 210, 254);
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.04) inset,
+    0 10px 26px -12px rgba(79, 70, 229, 0.25);
+}
+html.dark .prose-editor .codeblock-shell {
+  border-color: rgb(30, 41, 59);
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(99, 102, 241, 0.18), transparent 65%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(2, 6, 23, 0.92));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 10px 28px -14px rgba(0, 0, 0, 0.55);
+}
+html.dark .prose-editor .codeblock-shell:hover {
+  border-color: rgba(129, 140, 248, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 16px 32px -16px rgba(99, 102, 241, 0.45);
+}
+
+.prose-editor .codeblock-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px 7px 11px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.7), rgba(226, 232, 240, 0.35));
+  user-select: none;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system;
+}
+html.dark .prose-editor .codeblock-header {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.65), rgba(2, 6, 23, 0.45));
+}
+
+.prose-editor .codeblock-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 4px;
+}
+.prose-editor .codeblock-dots > span {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  display: inline-block;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  opacity: 0.92;
+}
+.prose-editor .codeblock-dots > span:nth-child(1) {
+  background: #ff5f57;
+}
+.prose-editor .codeblock-dots > span:nth-child(2) {
+  background: #febc2e;
+}
+.prose-editor .codeblock-dots > span:nth-child(3) {
+  background: #28c840;
+}
+html.dark .prose-editor .codeblock-dots > span {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+.prose-editor .codeblock-spacer {
+  flex: 1;
+}
+
+/* Shared base for the three header buttons (language, wrap, copy). */
+.prose-editor .codeblock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.7);
+  color: rgb(71, 85, 105);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+.prose-editor .codeblock-btn:hover {
+  background: white;
+  color: rgb(30, 41, 59);
+  border-color: rgb(226, 232, 240);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+html.dark .prose-editor .codeblock-btn {
+  background: rgba(30, 41, 59, 0.6);
+  color: rgb(203, 213, 225);
+}
+html.dark .prose-editor .codeblock-btn:hover {
+  background: rgb(30, 41, 59);
+  color: rgb(248, 250, 252);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Language pill specific. */
+.prose-editor .codeblock-lang.is-open {
+  background: white;
+  color: rgb(30, 41, 59);
+  border-color: rgb(226, 232, 240);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.prose-editor .codeblock-lang.is-readonly {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.5);
+}
+.prose-editor .codeblock-lang-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgb(99, 102, 241);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+}
+.prose-editor .codeblock-lang-chev {
+  opacity: 0.55;
+}
+html.dark .prose-editor .codeblock-lang.is-open {
+  background: rgb(30, 41, 59);
+  color: rgb(248, 250, 252);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+html.dark .prose-editor .codeblock-lang-dot {
+  background: rgb(129, 140, 248);
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.25);
+}
+
+.prose-editor .codeblock-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  width: 200px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 5px;
+  border-radius: 10px;
+  border: 1px solid rgb(226, 232, 240);
+  background: white;
+  box-shadow:
+    0 12px 32px -12px rgba(15, 23, 42, 0.25),
+    0 2px 6px -2px rgba(15, 23, 42, 0.08);
+  animation: codeblock-menu-in 120ms ease-out;
+}
+@keyframes codeblock-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+html.dark .prose-editor .codeblock-menu {
+  background: rgb(15, 23, 42);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 36px -16px rgba(0, 0, 0, 0.65),
+    0 2px 8px -2px rgba(0, 0, 0, 0.4);
+}
+.prose-editor .codeblock-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: rgb(51, 65, 85);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 100ms ease,
+    color 100ms ease;
+}
+.prose-editor .codeblock-menu-item:hover {
+  background: rgb(241, 245, 249);
+  color: rgb(15, 23, 42);
+}
+.prose-editor .codeblock-menu-item.is-active {
+  background: rgba(99, 102, 241, 0.1);
+  color: rgb(67, 56, 202);
+}
+html.dark .prose-editor .codeblock-menu-item {
+  color: rgb(203, 213, 225);
+}
+html.dark .prose-editor .codeblock-menu-item:hover {
+  background: rgba(30, 41, 59, 0.7);
+  color: rgb(248, 250, 252);
+}
+html.dark .prose-editor .codeblock-menu-item.is-active {
+  background: rgba(99, 102, 241, 0.2);
+  color: rgb(199, 210, 254);
+}
+.prose-editor .codeblock-menu-label {
+  flex: 1;
+}
+.prose-editor .codeblock-menu-check {
+  opacity: 0.85;
+}
+.prose-editor .codeblock-lang-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  background: rgb(148, 163, 184);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04) inset;
+  flex-shrink: 0;
+}
+.prose-editor .codeblock-lang-swatch.swatch-javascript {
+  background: #f7df1e;
+}
+.prose-editor .codeblock-lang-swatch.swatch-typescript {
+  background: #3178c6;
+}
+.prose-editor .codeblock-lang-swatch.swatch-python {
+  background: #3776ab;
+}
+.prose-editor .codeblock-lang-swatch.swatch-bash {
+  background: #4eaa25;
+}
+.prose-editor .codeblock-lang-swatch.swatch-json {
+  background: #cc7a00;
+}
+.prose-editor .codeblock-lang-swatch.swatch-yaml {
+  background: #cb171e;
+}
+.prose-editor .codeblock-lang-swatch.swatch-sql {
+  background: #e38c00;
+}
+.prose-editor .codeblock-lang-swatch.swatch-css {
+  background: #2965f1;
+}
+.prose-editor .codeblock-lang-swatch.swatch-html,
+.prose-editor .codeblock-lang-swatch.swatch-xml {
+  background: #e34c26;
+}
+.prose-editor .codeblock-lang-swatch.swatch-markdown {
+  background: #555;
+}
+.prose-editor .codeblock-lang-swatch.swatch-plaintext {
+  background: rgb(148, 163, 184);
+}
+
+/* Wrap toggle specific. */
+.prose-editor .codeblock-wrap {
+  gap: 5px;
+}
+.prose-editor .codeblock-wrap.is-on,
+.prose-editor .codeblock-wrap.is-on:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: rgb(67, 56, 202);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+html.dark .prose-editor .codeblock-wrap.is-on,
+html.dark .prose-editor .codeblock-wrap.is-on:hover {
+  background: rgba(99, 102, 241, 0.22);
+  color: rgb(199, 210, 254);
+  border-color: rgba(129, 140, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+
+/* Default: no wrap, horizontal scroll on the pre.
+   Tiptap's NodeViewContent hardcodes `white-space: pre-wrap` as an inline
+   style on the <code> element, so we override it with !important here. */
+.prose-editor .codeblock-shell pre code,
+.prose-editor .codeblock-shell pre code.hljs {
+  white-space: pre !important;
+  overflow-x: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+/* Wrap mode: break anywhere (handles long unbroken tokens). */
+.prose-editor .codeblock-shell.is-wrap pre,
+.prose-editor .codeblock-shell.is-wrap pre code,
+.prose-editor .codeblock-shell.is-wrap pre code.hljs {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  overflow-x: visible !important;
+}
+
+/* Copy button specific. */
+.prose-editor .codeblock-copy {
+  padding: 0 9px 0 8px;
+}
+.prose-editor .codeblock-copy:active {
+  transform: translateY(0.5px);
+}
+.prose-editor .codeblock-copy.is-copied,
+.prose-editor .codeblock-copy.is-copied:hover {
+  background: rgba(34, 197, 94, 0.12);
+  color: rgb(21, 128, 61);
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+.prose-editor .codeblock-copy-icon {
+  display: inline-grid;
+  place-items: center;
+  transition: transform 160ms ease;
+}
+.prose-editor .codeblock-copy.is-copied .codeblock-copy-icon {
+  transform: scale(1.08);
+}
+html.dark .prose-editor .codeblock-copy.is-copied,
+html.dark .prose-editor .codeblock-copy.is-copied:hover {
+  background: rgba(34, 197, 94, 0.18);
+  color: rgb(134, 239, 172);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.prose-editor .codeblock-shell pre {
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0 0 calc(12px - 1px) calc(12px - 1px);
+  box-shadow: none;
+  padding: 14px 16px;
+  font-size: 12.75px;
+  line-height: 1.65;
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+html.dark .prose-editor .codeblock-shell pre {
+  color: rgb(226, 232, 240);
+}
 .prose-editor pre code {
   background: transparent;
   color: inherit;
