@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import Modal from "./Modal";
 import { IconCheck, IconEye, IconEyeOff, IconSpinner, IconTrash, IconX } from "./Icon";
+import { useAuth } from "./AuthProvider";
 import {
   NoSupportedProviderError,
   ReauthCancelledError,
   ReauthMismatchError,
   RequiresRecentLoginError,
   WrongPasswordError,
-  useAuth,
-} from "./AuthProvider";
+} from "../lib/authErrors";
 
 type Step = "idle" | "reauth" | "data" | "auth" | "done";
 

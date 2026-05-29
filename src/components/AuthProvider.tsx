@@ -11,6 +11,13 @@ import { getFirebase, isCloudConfigured } from "../lib/firebase";
 import { clearSession, readSession, writeSession } from "../lib/storage";
 import { upsertUserProfile } from "../lib/sync";
 import { SESSION_TTL_MS } from "../lib/constants";
+import {
+  NoSupportedProviderError,
+  ReauthCancelledError,
+  ReauthMismatchError,
+  RequiresRecentLoginError,
+  WrongPasswordError,
+} from "../lib/authErrors";
 
 export interface AuthUser {
   uid: string;
@@ -44,41 +51,6 @@ interface AuthCtx {
 // deletion. The documented window is roughly 5 minutes since the last sign-in.
 // We use a slightly tighter threshold to give clock skew a margin.
 const RECENT_LOGIN_MS = 4 * 60 * 1000;
-
-export class RequiresRecentLoginError extends Error {
-  constructor() {
-    super("Please sign out and sign back in, then try deleting your account again.");
-    this.name = "RequiresRecentLoginError";
-  }
-}
-
-export class ReauthCancelledError extends Error {
-  constructor() {
-    super("Re-authentication was cancelled.");
-    this.name = "ReauthCancelledError";
-  }
-}
-
-export class ReauthMismatchError extends Error {
-  constructor() {
-    super("You re-authenticated with a different account. Please use the same account.");
-    this.name = "ReauthMismatchError";
-  }
-}
-
-export class WrongPasswordError extends Error {
-  constructor() {
-    super("Incorrect password. Please try again.");
-    this.name = "WrongPasswordError";
-  }
-}
-
-export class NoSupportedProviderError extends Error {
-  constructor() {
-    super("This account uses a sign-in method that cannot be re-authenticated here.");
-    this.name = "NoSupportedProviderError";
-  }
-}
 
 function firebaseErrorCode(err: unknown): string | null {
   if (
