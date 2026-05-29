@@ -21,6 +21,26 @@ interface Props {
   error?: string | null;
 }
 
+// Shared attributes for the master-password inputs. They are deliberately
+// rendered as type="text" (masked with the `.masked-input` CSS class) rather
+// than type="password": Chrome ignores autocomplete="off" on real password
+// fields and still pops its "Saved passwords" dropdown, but it does not treat a
+// text field as a password field, so nothing is offered or saved. The ignore
+// hints keep 1Password/LastPass/Bitwarden out, and turning off
+// autocapitalize/autocorrect/spellcheck stops a text field from mangling the
+// password on mobile or sending it to a spellcheck service - things a real
+// password field would never do.
+const SECRET_INPUT_PROPS = {
+  type: "text",
+  autoComplete: "off",
+  autoCapitalize: "off",
+  autoCorrect: "off",
+  spellCheck: false,
+  "data-1p-ignore": true,
+  "data-lpignore": "true",
+  "data-bwignore": true,
+} as const;
+
 export default function MasterPasswordScreen({
   mode,
   legacyCount = 0,
@@ -34,6 +54,12 @@ export default function MasterPasswordScreen({
   const [pw2, setPw2] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
+  // Defense-in-depth on top of SECRET_INPUT_PROPS: keep each field readOnly
+  // until it is focused, so even an aggressive password-manager extension that
+  // injects on focus has nothing editable to attach to. Flipped editable on
+  // first focus so typing still works.
+  const [pwLocked, setPwLocked] = useState(true);
+  const [pw2Locked, setPw2Locked] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
   const [remember, setRemember] = useState<RememberDuration>(() => readRememberPref());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -132,10 +158,12 @@ export default function MasterPasswordScreen({
             <div className="relative">
               <input
                 id="mp-pw"
+                name="vault-master-key"
                 ref={inputRef}
-                type={showPw ? "text" : "password"}
-                autoComplete={isCreate ? "new-password" : "current-password"}
-                className="input pr-10"
+                {...SECRET_INPUT_PROPS}
+                readOnly={pwLocked}
+                onFocus={() => setPwLocked(false)}
+                className={`input pr-10${showPw ? "" : " masked-input"}`}
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 placeholder={isCreate ? "At least 8 characters" : "Your master password"}
@@ -162,9 +190,11 @@ export default function MasterPasswordScreen({
               <div className="relative">
                 <input
                   id="mp-pw2"
-                  type={showPw2 ? "text" : "password"}
-                  autoComplete="new-password"
-                  className="input pr-10"
+                  name="vault-master-key-confirm"
+                  {...SECRET_INPUT_PROPS}
+                  readOnly={pw2Locked}
+                  onFocus={() => setPw2Locked(false)}
+                  className={`input pr-10${showPw2 ? "" : " masked-input"}`}
                   value={pw2}
                   onChange={(e) => setPw2(e.target.value)}
                   placeholder="Re-enter master password"

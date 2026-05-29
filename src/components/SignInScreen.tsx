@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { translateAuthError } from "../lib/firebase";
+import { offerCredentialToBrowser } from "../lib/credentialStore";
 import { useToast } from "./Toast";
 import ThemeToggle from "./ThemeToggle";
 import { IconEye, IconEyeOff, IconKey, IconShield, IconUnlock } from "./Icon";
@@ -66,9 +67,11 @@ export default function SignInScreen() {
           return;
         }
         await signUp(email, password);
+        await offerCredentialToBrowser(email, password);
         toast.show("Welcome! Account created.", "success");
       } else {
         await signIn(email, password);
+        await offerCredentialToBrowser(email, password);
         toast.show("Welcome back!", "success");
       }
     } catch (err) {
@@ -153,6 +156,7 @@ export default function SignInScreen() {
                 </label>
                 <input
                   id="auth-email"
+                  name="email"
                   ref={emailRef}
                   type="email"
                   autoComplete="email"
@@ -172,6 +176,7 @@ export default function SignInScreen() {
                   <div className="relative">
                     <input
                       id="auth-pw"
+                      name="password"
                       type={showPw ? "text" : "password"}
                       autoComplete={mode === "signup" ? "new-password" : "current-password"}
                       className="input pr-10"

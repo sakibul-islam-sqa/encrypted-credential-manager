@@ -62,6 +62,12 @@
   @apply mb-1 block text-xs font-medium uppercase tracking-wider text-slate-500
     dark:text-slate-400;
 }
+/* Masks a type="text" input so it reads like a password field visually,
+   without being a real <input type="password"> the browser password manager
+   would offer to save / autofill. Used by the master-password fields. */
+.masked-input {
+  -webkit-text-security: disc;
+}
 @utility card {
   @apply rounded-xl border border-slate-200 bg-white backdrop-blur
     shadow-[0_1px_0_0_rgba(0,0,0,0.02)_inset]
