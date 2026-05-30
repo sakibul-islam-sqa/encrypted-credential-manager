@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { translateAuthError } from "../lib/firebase";
+import { MIN_PASSWORD_LENGTH } from "../lib/constants";
 import { offerCredentialToBrowser } from "../lib/credentialStore";
 import { useToast } from "./Toast";
 import ThemeToggle from "./ThemeToggle";
@@ -61,8 +62,8 @@ export default function SignInScreen() {
           "If a password account exists for this email, a reset link is on the way. Check your spam folder. Google sign-in accounts don’t have a password to reset — use “Continue with Google” instead."
         );
       } else if (mode === "signup") {
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters.");
+        if (password.length < MIN_PASSWORD_LENGTH) {
+          setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
           setBusy(false);
           return;
         }
@@ -182,7 +183,11 @@ export default function SignInScreen() {
                       className="input pr-10"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={mode === "signup" ? "At least 6 characters" : "Your password"}
+                      placeholder={
+                        mode === "signup"
+                          ? `At least ${MIN_PASSWORD_LENGTH} characters`
+                          : "Your password"
+                      }
                       required
                     />
                     <button

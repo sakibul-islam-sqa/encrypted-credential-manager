@@ -18,6 +18,9 @@ export const NO_VARIANT_KEY = "__NO_VARIANT__";
 /** Firebase auth session TTL (7 days). */
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Minimum password length Firebase enforces for password accounts. */
+export const MIN_PASSWORD_LENGTH = 6;
+
 /** Local-storage keys (versioned so future schema changes are explicit). */
 export const STORAGE_KEYS = {
   theme: `${APP_NAMESPACE}.theme`,

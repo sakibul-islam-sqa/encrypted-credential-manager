@@ -2,6 +2,8 @@ import type { FirebaseApp } from "firebase/app";
 import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
 
+import { MIN_PASSWORD_LENGTH } from "./constants";
+
 interface FirebaseBundle {
   app: FirebaseApp;
   auth: Auth;
@@ -63,7 +65,7 @@ export function translateAuthError(err: unknown): string {
     case "auth/missing-password":
       return "Please enter your password.";
     case "auth/weak-password":
-      return "Password is too weak. Use at least 6 characters.";
+      return `Password is too weak. Use at least ${MIN_PASSWORD_LENGTH} characters.`;
     case "auth/email-already-in-use":
       return "An account with this email already exists. Try signing in instead.";
     case "auth/invalid-credential":

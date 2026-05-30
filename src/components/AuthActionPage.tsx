@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFirebase, translateAuthError } from "../lib/firebase";
+import { MIN_PASSWORD_LENGTH } from "../lib/constants";
 import PasswordStrengthMeter from "./PasswordStrengthMeter";
 import ThemeToggle from "./ThemeToggle";
 import {
@@ -31,8 +32,6 @@ type Status =
   | { kind: "reset"; email: string | null }
   | { kind: "success"; title: string; message: string }
   | { kind: "error"; title: string; message: string };
-
-const MIN_PASSWORD_LENGTH = 6;
 
 function readParams() {
   const q = new URLSearchParams(window.location.search);
@@ -129,11 +128,19 @@ export default function AuthActionPage() {
           setStatus({ kind: "reset", email });
         } else if (mode === "verifyEmail" || mode === "verifyAndChangeEmail") {
           await authMod.applyActionCode(fb.auth, oobCode);
-          setStatus({
-            kind: "success",
-            title: "Email verified",
-            message: "Your email address has been verified. You can now sign in.",
-          });
+          setStatus(
+            mode === "verifyAndChangeEmail"
+              ? {
+                  kind: "success",
+                  title: "Email updated",
+                  message: "Your new email address has been verified. You can now sign in with it.",
+                }
+              : {
+                  kind: "success",
+                  title: "Email verified",
+                  message: "Your email address has been verified. You can now sign in.",
+                }
+          );
         } else if (mode === "recoverEmail") {
           const info = await authMod.checkActionCode(fb.auth, oobCode);
           const restored = info.data.email ?? null;
