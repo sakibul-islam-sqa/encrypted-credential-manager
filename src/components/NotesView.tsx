@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { NoteEntry } from "../types";
 import { FILTER_ALL } from "../lib/constants";
 import RichEditor from "./RichEditor";
@@ -364,7 +364,10 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
   );
 });
 
-export default NotesView;
+// Memoized: NotesView is the heaviest view (rich-text editor). Its props are
+// stable across the parent's sync-state ticks, so memo lets it skip the extra
+// re-renders that fire while a note autosaves.
+export default memo(NotesView);
 
 function TagPill({
   label,

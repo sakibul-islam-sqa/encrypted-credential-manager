@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { IconDownload, IconLogout, IconUpload, IconUser } from "./Icon";
+import { IconDownload, IconKey, IconLogout, IconTrash, IconUpload, IconUser } from "./Icon";
 
 interface Props {
   onImport: () => void;
   onExport: () => void | Promise<void>;
   onSignOut: () => void;
+  onClearData: () => void;
   onClearAllData: () => void;
   onDeleteAccount: () => void;
   onLock: () => void;
@@ -20,6 +21,7 @@ export default function UserMenu({
   onImport,
   onExport,
   onSignOut,
+  onClearData,
   onClearAllData,
   onDeleteAccount,
   onLock,
@@ -142,28 +144,33 @@ export default function UserMenu({
             label="Sign out"
           />
           <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
-          <button
-            type="button"
-            role="menuitem"
-            className="btn-ghost w-full justify-start !text-rose-600 hover:!bg-rose-50 dark:!text-rose-300 dark:hover:!bg-rose-900/40"
+          <MenuItem
+            danger
+            onClick={() => {
+              setOpen(false);
+              onClearData();
+            }}
+            icon={<IconTrash size={14} />}
+            label="Clear all data (keep master password)"
+          />
+          <MenuItem
+            danger
             onClick={() => {
               setOpen(false);
               onClearAllData();
             }}
-          >
-            Reset vault (deletes all data)
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="btn-ghost w-full justify-start !text-rose-600 hover:!bg-rose-50 dark:!text-rose-300 dark:hover:!bg-rose-900/40"
+            icon={<IconKey size={14} />}
+            label="Reset master password (deletes all data)"
+          />
+          <MenuItem
+            danger
             onClick={() => {
               setOpen(false);
               onDeleteAccount();
             }}
-          >
-            Delete account
-          </button>
+            icon={<IconUser size={14} />}
+            label="Delete account"
+          />
         </div>
       )}
     </div>
@@ -174,19 +181,26 @@ function MenuItem({
   onClick,
   icon,
   label,
+  danger = false,
 }: {
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  danger?: boolean;
 }) {
   return (
     <button
       type="button"
       role="menuitem"
-      className="btn-ghost w-full justify-start"
+      className={`btn-ghost w-full items-center justify-start gap-2 text-left${
+        danger
+          ? " !text-rose-600 hover:!bg-rose-50 dark:!text-rose-300 dark:hover:!bg-rose-900/40"
+          : ""
+      }`}
       onClick={onClick}
     >
-      {icon} {label}
+      <span className="shrink-0">{icon}</span>
+      <span>{label}</span>
     </button>
   );
 }
