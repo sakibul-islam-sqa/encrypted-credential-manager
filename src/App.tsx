@@ -17,10 +17,12 @@ import EntityFormModal from "./components/EntityFormModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 const NotesView = lazy(() => import("./components/NotesView"));
 const UrlsView = lazy(() => import("./components/UrlsView"));
+const AuthActionPage = lazy(() => import("./components/AuthActionPage"));
 import { clearEncryptedCache, clearNotesCache, createEmptyVault } from "./lib/storage";
 import { deleteAllNotesRemote, deleteCloudVault, deleteUserProfile } from "./lib/sync";
 import { clearCachedKey } from "./lib/keyCache";
 import { TAB_REFRESH_COPY, type AppView } from "./lib/views";
+import { isAuthActionRoute } from "./lib/authActionRoute";
 import { useSyncStatus } from "./hooks/useSyncStatus";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { useConfirmDialog } from "./hooks/useConfirmDialog";
@@ -434,6 +436,21 @@ function Shell() {
 }
 
 export default function App() {
+  // Firebase email-action links (reset password / verify email) land on their
+  // own branded handler that talks to Firebase directly - it must not mount
+  // AuthProvider/Shell, whose vault-bootstrap flow assumes a signed-in session.
+  if (isAuthActionRoute()) {
+    return (
+      <ErrorBoundary>
+        <ThemeProvider>
+          <Suspense fallback={<CenteredSpinner label="Loading..." />}>
+            <AuthActionPage />
+          </Suspense>
+        </ThemeProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
