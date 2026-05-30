@@ -19,7 +19,7 @@ interface ToastEntry {
   bornAt: number;
 }
 
-interface ToastApi {
+export interface ToastApi {
   show: (message: string, kind?: FinalKind) => number;
   loading: (message: string) => number;
   update: (id: number, message: string, kind: FinalKind) => void;
