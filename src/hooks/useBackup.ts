@@ -129,13 +129,13 @@ export function useBackup({
       return;
     }
     if (!isOurBackupEnvelope(parsedEnvelope)) {
-      setImportError("File doesn't look like a Credential Manager export.");
+      setImportError("File doesn't look like a Credentials Manager export.");
       return;
     }
     const envelope = parsedEnvelope as Record<string, unknown>;
     const blob = envelope.blob;
     if (!isEncryptedBackupBlob(blob)) {
-      setImportError("File doesn't look like a Credential Manager export.");
+      setImportError("File doesn't look like a Credentials Manager export.");
       return;
     }
     if (!importPassword) {

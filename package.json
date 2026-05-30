@@ -1,5 +1,5 @@
 {
-  "name": "credential-manager",
+  "name": "credentials-manager",
   "private": true,
   "version": "1.0.0",
   "type": "module",

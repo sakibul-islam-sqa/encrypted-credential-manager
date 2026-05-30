@@ -5,7 +5,7 @@
  * encrypted blob. The blob's plaintext is a `FullBackup` JSON object:
  *
  *     {
- *       type: "credential-manager-export",
+ *       type: "credentials-manager-export",
  *       v: 3,                     // export schema version
  *       exportedAt: ISO-8601,
  *       includes: ["credentials", "urls", "notes"],
@@ -21,7 +21,7 @@ import type { EncryptedPayload } from "./cryptoZK";
 import type { NoteEntry, Vault } from "../types";
 
 export const BACKUP_SCHEMA_VERSION = 3;
-export const BACKUP_TYPE = "credential-manager-export";
+export const BACKUP_TYPE = "credentials-manager-export";
 
 export interface FullBackup {
   version: 1;
@@ -55,7 +55,7 @@ export function buildBackupEnvelope(
 
 /** Suggested filename: includes the export date for human sortability. */
 export function backupFilename(exportedAt: string): string {
-  return `credential-manager-full-${exportedAt.slice(0, 10)}.json`;
+  return `credentials-manager-full-${exportedAt.slice(0, 10)}.json`;
 }
 
 /* --------------------------- Validators / type guards --------------------- */

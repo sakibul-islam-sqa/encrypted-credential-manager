@@ -64,7 +64,7 @@ export default function AppHeader(props: Props) {
             <IconShield size={18} />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight">Credential Manager</div>
+            <div className="text-sm font-semibold tracking-tight">Credentials Manager</div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">{subtitle}</div>
           </div>
         </div>

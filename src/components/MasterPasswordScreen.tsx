@@ -94,7 +94,7 @@ export default function MasterPasswordScreen({
             <IconShield size={22} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight">Credential Manager</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Credentials Manager</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
           </div>
           <div className="ml-auto">

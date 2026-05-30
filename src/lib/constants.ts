@@ -7,7 +7,7 @@
  */
 
 /** Stable prefix for every browser-side storage key we own. */
-export const APP_NAMESPACE = "credential-manager";
+export const APP_NAMESPACE = "credentials-manager";
 
 /** Sentinel values used by the various "All / no filter" dropdowns. */
 export const FILTER_ALL = "__ALL__";

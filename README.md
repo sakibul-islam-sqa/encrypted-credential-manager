@@ -1,4 +1,4 @@
-# Credential Manager
+# Encrypted Credentials Manager
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
@@ -117,7 +117,7 @@ These keys are **public by design** - the Firebase web config is shipped to ever
 
 ### 3. Authorize your Netlify domain
 
-In Firebase Console -> **Authentication -> Settings -> Authorized domains** -> Add your Netlify URL (e.g. `credential-manager.netlify.app`). Otherwise sign-in will fail in production.
+In Firebase Console -> **Authentication -> Settings -> Authorized domains** -> Add your Netlify URL (e.g. `credentials-manager.netlify.app`). Otherwise sign-in will fail in production.
 
 ### 4. Use it
 
