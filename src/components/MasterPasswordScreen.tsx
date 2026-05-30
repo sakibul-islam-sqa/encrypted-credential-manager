@@ -9,6 +9,7 @@ import {
   REMEMBER_OPTIONS,
   type RememberDuration,
 } from "../lib/keyCache";
+import { SECRET_INPUT_PROPS } from "../lib/secretInput";
 
 export type MasterPasswordMode = "create" | "unlock" | "migrate";
 
@@ -20,26 +21,6 @@ interface Props {
   busy?: boolean;
   error?: string | null;
 }
-
-// Shared attributes for the master-password inputs. They are deliberately
-// rendered as type="text" (masked with the `.masked-input` CSS class) rather
-// than type="password": Chrome ignores autocomplete="off" on real password
-// fields and still pops its "Saved passwords" dropdown, but it does not treat a
-// text field as a password field, so nothing is offered or saved. The ignore
-// hints keep 1Password/LastPass/Bitwarden out, and turning off
-// autocapitalize/autocorrect/spellcheck stops a text field from mangling the
-// password on mobile or sending it to a spellcheck service - things a real
-// password field would never do.
-const SECRET_INPUT_PROPS = {
-  type: "text",
-  autoComplete: "off",
-  autoCapitalize: "off",
-  autoCorrect: "off",
-  spellCheck: false,
-  "data-1p-ignore": true,
-  "data-lpignore": "true",
-  "data-bwignore": true,
-} as const;
 
 export default function MasterPasswordScreen({
   mode,

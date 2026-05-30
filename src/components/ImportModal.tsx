@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Modal from "./Modal";
 import { IconEye, IconEyeOff, IconSpinner } from "./Icon";
+import { SECRET_INPUT_PROPS } from "../lib/secretInput";
 
 interface Props {
   open: boolean;
@@ -91,12 +92,12 @@ export default function ImportModal({
           <div className="relative">
             <input
               id="imp-pw"
-              type={passwordVisible ? "text" : "password"}
-              className="input pr-10"
+              name="vault-import-key"
+              {...SECRET_INPUT_PROPS}
+              className={`input pr-10${passwordVisible ? "" : " masked-input"}`}
               value={password}
               onChange={(e) => onChangePassword(e.target.value)}
               placeholder="Master password used at export time"
-              autoComplete="off"
               disabled={busy}
               autoFocus
             />
