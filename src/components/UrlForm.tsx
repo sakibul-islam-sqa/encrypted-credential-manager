@@ -89,10 +89,13 @@ export default function UrlForm({ initial, knownApps, knownVariants, onSubmit }:
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Environment *</label>
+          <label className="label" htmlFor="uf-environment">
+            Environment *
+          </label>
           <div className="flex gap-2">
             {envMode === "preset" ? (
               <select
+                id="uf-environment"
                 className="input"
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value)}
@@ -105,6 +108,7 @@ export default function UrlForm({ initial, knownApps, knownVariants, onSubmit }:
               </select>
             ) : (
               <input
+                id="uf-environment"
                 className="input"
                 value={customEnv}
                 onChange={(e) => setCustomEnv(e.target.value)}

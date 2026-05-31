@@ -119,6 +119,8 @@ export default function ImportModal({
             Show raw JSON
           </summary>
           <textarea
+            name="import-json"
+            aria-label="Raw JSON to import"
             className="input mt-2 min-h-[160px] font-mono text-[12px]"
             value={text}
             onChange={(e) => onChangeText(e.target.value)}

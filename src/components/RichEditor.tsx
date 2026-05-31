@@ -419,6 +419,8 @@ function LinkEditor({
       </div>
       <input
         ref={inputRef}
+        name="link-url"
+        aria-label="Link URL"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {

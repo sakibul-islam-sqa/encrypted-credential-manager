@@ -166,10 +166,13 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
         </div>
 
         <div>
-          <label className="label">Environment</label>
+          <label className="label" htmlFor="cf-environment">
+            Environment
+          </label>
           <div className="flex gap-2">
             {envMode === "preset" && hasEnvOptions ? (
               <select
+                id="cf-environment"
                 className="input"
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value)}
@@ -183,6 +186,7 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
               </select>
             ) : (
               <input
+                id="cf-environment"
                 className="input"
                 value={customEnv}
                 onChange={(e) => setCustomEnv(e.target.value)}
@@ -225,6 +229,11 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="qa.user"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
         </div>
         <div>
@@ -238,6 +247,11 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="qa@example.com"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
         </div>
       </div>
@@ -249,12 +263,17 @@ export default function CredentialForm({ initial, urlAppEnvs, onSubmit }: Props)
         <div className="relative">
           <input
             id="cf-password"
-            type={showPw ? "text" : "password"}
+            type="text"
             className="input pr-24 font-mono"
+            style={showPw ? undefined : ({ WebkitTextSecurity: "disc" } as React.CSSProperties)}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
           />
           <div className="absolute inset-y-0 right-1 flex items-center gap-0.5">
             <button
