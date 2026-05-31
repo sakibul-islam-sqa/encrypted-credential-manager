@@ -6,6 +6,7 @@ import { envColor } from "../lib/envColor";
 import { FILTER_ALL, NO_VARIANT_KEY } from "../lib/constants";
 import { useToast } from "./Toast";
 import EmptyState from "./EmptyState";
+import SearchInput from "./SearchInput";
 import {
   IconCheck,
   IconCopy,
@@ -14,7 +15,6 @@ import {
   IconFilter,
   IconGlobe,
   IconPlus,
-  IconSearch,
   IconTrash,
 } from "./Icon";
 
@@ -106,18 +106,14 @@ export default function UrlsView({ urls, onAdd, onEdit, onDelete }: Props) {
   return (
     <>
       <section className="card mb-6 flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <IconSearch
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-          />
-          <input
-            className="input pl-9"
-            placeholder="Search app, variant, env, URL, label, notes..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          className="flex-1"
+          name="urls-search"
+          label="Search URLs"
+          placeholder="Search app, variant, env, URL, label, notes..."
+          value={query}
+          onChange={setQuery}
+        />
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -125,6 +121,7 @@ export default function UrlsView({ urls, onAdd, onEdit, onDelete }: Props) {
             <span className="hidden sm:inline">Filter</span>
           </div>
           <select
+            name="urls-app-filter"
             className="input !w-auto !py-1.5"
             value={appFilter}
             onChange={(e) => setAppFilter(e.target.value)}
@@ -138,6 +135,7 @@ export default function UrlsView({ urls, onAdd, onEdit, onDelete }: Props) {
             ))}
           </select>
           <select
+            name="urls-env-filter"
             className="input !w-auto !py-1.5"
             value={envFilter}
             onChange={(e) => setEnvFilter(e.target.value)}
@@ -152,7 +150,7 @@ export default function UrlsView({ urls, onAdd, onEdit, onDelete }: Props) {
           </select>
           <button type="button" className="btn-primary sm:ml-1" onClick={onAdd}>
             <IconPlus size={16} />
-            <span>Add URL</span>
+            <span>Add</span>
           </button>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { FILTER_ALL } from "../lib/constants";
 import RichEditor from "./RichEditor";
 import Modal from "./Modal";
 import EmptyState from "./EmptyState";
+import SearchInput from "./SearchInput";
 import {
   IconCheck,
   IconEdit,
@@ -158,29 +159,14 @@ const NotesView = forwardRef<NotesViewHandle, Props>(function NotesView(
               <span>New</span>
             </button>
           </div>
-          <div className="relative">
-            <IconSearch
-              size={14}
-              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-            />
-            <input
-              className="input !py-2 pl-8 pr-8 text-xs"
-              placeholder="Search notes..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query && (
-              <button
-                type="button"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-200/70 hover:text-slate-700 dark:hover:bg-slate-800/70 dark:hover:text-slate-200"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                title="Clear"
-              >
-                <IconX size={12} />
-              </button>
-            )}
-          </div>
+          <SearchInput
+            size="sm"
+            name="notes-search"
+            label="Search notes"
+            placeholder="Search notes..."
+            value={query}
+            onChange={setQuery}
+          />
           {allTags.length > 0 && (
             <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <TagPill
@@ -586,6 +572,8 @@ const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEd
         {isEditing ? (
           <input
             ref={titleInputRef}
+            name="note-title"
+            aria-label="Note title"
             className="input flex-1 !text-base !font-semibold"
             placeholder="Note title"
             value={draftTitle}
@@ -634,6 +622,8 @@ const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEd
       <div className="border-b border-slate-200 px-3 py-2 dark:border-slate-800/70">
         {isEditing ? (
           <input
+            name="note-tags"
+            aria-label="Note tags"
             className="input !py-1.5 !text-xs"
             placeholder="Tags, comma separated (e.g. api, postman, debugging)"
             value={draftTags}

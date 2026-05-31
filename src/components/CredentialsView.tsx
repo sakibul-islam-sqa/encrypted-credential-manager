@@ -3,7 +3,8 @@ import type { CredentialEntry } from "../types";
 import { FILTER_ALL } from "../lib/constants";
 import CredentialCard from "./CredentialCard";
 import EmptyState from "./EmptyState";
-import { IconFilter, IconPlus, IconSearch, IconShield } from "./Icon";
+import SearchInput from "./SearchInput";
+import { IconFilter, IconPlus, IconShield } from "./Icon";
 
 interface Props {
   entries: CredentialEntry[];
@@ -77,19 +78,14 @@ export default function CredentialsView({ entries, onAdd, onEdit, onDelete }: Pr
   return (
     <>
       <section className="card mb-6 flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <IconSearch
-            size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-          />
-          <input
-            className="input pl-9"
-            placeholder="Search app, URL, username, tag, notes..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search credentials"
-          />
-        </div>
+        <SearchInput
+          className="flex-1"
+          name="credentials-search"
+          label="Search credentials"
+          placeholder="Search app, URL, username, tag, notes..."
+          value={query}
+          onChange={setQuery}
+        />
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -97,6 +93,7 @@ export default function CredentialsView({ entries, onAdd, onEdit, onDelete }: Pr
             <span className="hidden sm:inline">Filter</span>
           </div>
           <select
+            name="credentials-app-filter"
             className="input !w-auto !py-1.5"
             value={appFilter}
             onChange={(e) => setAppFilter(e.target.value)}
@@ -110,6 +107,7 @@ export default function CredentialsView({ entries, onAdd, onEdit, onDelete }: Pr
             ))}
           </select>
           <select
+            name="credentials-env-filter"
             className="input !w-auto !py-1.5"
             value={envFilter}
             onChange={(e) => setEnvFilter(e.target.value)}
