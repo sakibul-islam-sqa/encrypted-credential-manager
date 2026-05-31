@@ -1,7 +1,6 @@
 import type { RefObject } from "react";
 import SyncStatus, { type SyncState } from "./SyncStatus";
 import TabButton from "./TabButton";
-import ThemeToggle from "./ThemeToggle";
 import UserMenu from "./UserMenu";
 import { IconGlobe, IconNote, IconShield } from "./Icon";
 import type { AppView } from "../lib/views";
@@ -26,7 +25,8 @@ interface Props {
 }
 
 /**
- * Sticky app header: brand, tab nav, sync chip, user menu, theme toggle.
+ * Sticky app header: brand, tab nav, sync chip, and user menu (the theme
+ * toggle lives inside the user menu dropdown).
  * The tab nav appears inline on >=sm screens and stacks below on mobile.
  */
 export default function AppHeader(props: Props) {
@@ -81,6 +81,7 @@ export default function AppHeader(props: Props) {
         <div className="ml-auto flex items-center gap-2">
           <input
             ref={fileInputRef}
+            name="import-file"
             type="file"
             accept="application/json,.json"
             className="hidden"
@@ -96,7 +97,6 @@ export default function AppHeader(props: Props) {
             onDeleteAccount={onDeleteAccount}
             onLock={onLock}
           />
-          <ThemeToggle />
         </div>
       </div>
       <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 pb-2 sm:hidden sm:px-6">

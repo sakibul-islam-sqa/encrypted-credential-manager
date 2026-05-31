@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
-import { IconDownload, IconKey, IconLogout, IconTrash, IconUpload, IconUser } from "./Icon";
+import { useTheme } from "./Theme";
+import {
+  IconDownload,
+  IconKey,
+  IconLogout,
+  IconMoon,
+  IconSun,
+  IconTrash,
+  IconUpload,
+  IconUser,
+} from "./Icon";
 
 interface Props {
   onImport: () => void;
@@ -27,6 +37,8 @@ export default function UserMenu({
   onLock,
 }: Props) {
   const { user, sessionExpiresAt } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const isDark = theme === "dark";
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -111,6 +123,12 @@ export default function UserMenu({
               </div>
             )}
           </div>
+          <MenuItem
+            onClick={toggleTheme}
+            icon={isDark ? <IconSun size={14} /> : <IconMoon size={14} />}
+            label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+          />
+          <div className="my-1 border-t border-slate-200 dark:border-slate-800" />
           <MenuItem
             onClick={() => {
               setOpen(false);
